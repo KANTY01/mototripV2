@@ -1,4 +1,6 @@
 # mototripV2
+Na obecną chwilę przeklejone z aplikacji z tamtego roku
+
 # MotoTrip
 
 Welcome to **MotoTrip** - a comprehensive platform for motorcycle enthusiasts to plan, share, and join motorcycle trips. This service provides detailed trip announcements, allowing users to explore various routes and adventures. Each trip has unique information and is waiting for riders to join and create unforgettable memories.
