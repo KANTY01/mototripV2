@@ -1,0 +1,46 @@
+{
+  "name": "motortrip-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/server.js",
+  "license": "MIT",
+  "scripts": {
+    "migrate": "npx sequelize-cli db:migrate",
+    "migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "start": "node dist/server.js",
+    "dev": "nodemon dist/server.js",
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test-db": "NODE_OPTIONS=\"--import=ts-node/esm\" ts-node --esm scripts/test-db-connection.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "csurf": "^1.11.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "redis-server": "^1.2.2",
+    "sequelize": "^6.35.1",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/express-validator": "^3.0.2",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/sequelize": "^4.28.20",
+    "express-validator": "^7.2.1",
+    "nodemon": "^3.0.2",
+    "sequelize-cli": "^6.6.1",
+    "sequelize-typescript": "^2.1.6",
+    "typescript": "^5.7.3"
+  }
+}
