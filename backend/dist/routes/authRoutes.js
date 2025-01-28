@@ -10,8 +10,9 @@ router.post('/login', authController.login);
 router.post('/refresh', validateRefreshToken, authController.refreshToken);
 // Logout route (requires valid token)
 router.post('/logout', validateAccessToken, authController.logout);
-// Protected test route
-router.get('/protected', validateAccessToken, (req, res) => {
-    res.json({ message: 'Protected route accessed' });
+// Get current user route
+router.get('/me', validateAccessToken, (req, res) => {
+    // Since validateAccessToken middleware sets req.user, we can return it
+    res.json({ user: req.user });
 });
 export default router;

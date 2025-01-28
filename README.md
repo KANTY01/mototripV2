@@ -2,16 +2,6 @@
 
 Welcome to **MotoTrip** - a comprehensive platform for motorcycle enthusiasts to plan, share, and join motorcycle trips. This service provides detailed trip announcements, allowing users to explore various routes and adventures. Each trip has unique information and is waiting for riders to join and create unforgettable memories.
 
-## Table of Contents
-
-1. [Features](#features)
-2. [Technology Stack](#technology-stack)
-3. [Database Design and Structure](#database-design-and-structure)
-4. [Design Patterns](#design-patterns)
-5. [Installation](#installation)
-6. [Usage](#usage)
-7. [Contributing](#contributing)
-8. [License](#license)
 
 ## Features
 

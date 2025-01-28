@@ -1,7 +1,7 @@
 {
   "development": {
-    "username": "piotr",
-    "password": "piotr",
+    "username": "barbatos",
+    "password": "barbatos",
     "database": "motortrip_dev",
     "host": "127.0.0.1",
     "port": 5432,

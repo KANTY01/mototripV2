@@ -12,18 +12,26 @@ class TripService {
     }
     static async searchTrips(filters) {
         const where = {};
-        const { from, to, departureDate, minPrice, maxPrice, seats } = filters;
-        if (from)
-            where.start_date = { [Op.iLike]: `%${from}%` };
-        if (to)
-            where.end_date = { [Op.iLike]: `%${to}%` };
-        if (departureDate) {
-            const startDate = new Date(departureDate);
-            startDate.setUTCHours(0, 0, 0, 0);
-            const endDate = new Date(departureDate);
-            endDate.setUTCHours(23, 59, 59, 999);
-            where.start_date = { [Op.between]: [startDate, endDate] };
+        const { search, location, startDate, endDate, minPrice, maxPrice, capacity, categories, tags, sortBy } = filters;
+        // Search filter
+        if (search) {
+            where[Op.or] = [
+                { title: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } }
+            ];
         }
+        // Location filter
+        if (location) {
+            where.location = { [Op.iLike]: `%${location}%` };
+        }
+        // Date filters
+        if (startDate) {
+            where.start_date = { [Op.gte]: new Date(startDate) };
+        }
+        if (endDate) {
+            where.end_date = { [Op.lte]: new Date(endDate) };
+        }
+        // Price range
         if (minPrice || maxPrice) {
             where.price = {};
             if (minPrice)
@@ -31,17 +39,55 @@ class TripService {
             if (maxPrice)
                 where.price[Op.lte] = maxPrice;
         }
-        if (seats)
-            where.seats_available = { [Op.gte]: seats };
-        return Trip.findAll({
+        // Capacity
+        if (capacity) {
+            where.seats_available = { [Op.gte]: capacity };
+        }
+        // Categories
+        if (categories && categories.length > 0) {
+            where.route_type = { [Op.in]: categories };
+        }
+        // Tags
+        if (tags && tags.length > 0) {
+            where.motorcycle_types = { [Op.overlap]: tags };
+        }
+        // Determine sort order
+        const order = [['createdAt', 'DESC']];
+        if (sortBy) {
+            switch (sortBy) {
+                case 'price-low':
+                    order[0] = ['price', 'ASC'];
+                    break;
+                case 'price-high':
+                    order[0] = ['price', 'DESC'];
+                    break;
+                case 'rating':
+                    order[0] = ['rating', 'DESC'];
+                    break;
+                case 'date':
+                    order[0] = ['start_date', 'ASC'];
+                    break;
+            }
+        }
+        const limit = 12; // Items per page
+        const offset = ((filters.page || 1) - 1) * limit;
+        const { rows: trips, count: total } = await Trip.findAndCountAll({
             where,
             include: [{
                     model: User,
                     as: 'organizer',
-                    attributes: ['id', 'firstName', 'lastName', 'email']
+                    attributes: ['id', 'username']
                 }],
-            order: [['start_date', 'ASC']]
+            order: order, // Type assertion needed for Sequelize's order type
+            limit,
+            offset
         });
+        return {
+            trips,
+            total,
+            perPage: limit,
+            currentPage: filters.page || 1
+        };
     }
     static async updateTrip(tripId, updates, userId) {
         const trip = await Trip.findByPk(tripId);

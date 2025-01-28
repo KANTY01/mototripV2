@@ -37,9 +37,20 @@ const authController = {
     },
     login: async (req, res) => {
         try {
+            console.log('Login attempt:', { email: req.body.email });
             const { email, password } = req.body;
             const user = await User.findOne({ where: { email } });
-            if (!user || !(await User.comparePassword(password, user.password_hash))) {
+            if (!user) {
+                console.log('User not found:', email);
+                throw new ApiError('Invalid credentials', 401);
+            }
+            const isValidPassword = await User.comparePassword(password, user.password_hash);
+            console.log('Password validation:', {
+                email,
+                isValid: isValidPassword,
+                passwordHash: user.password_hash
+            });
+            if (!isValidPassword) {
                 throw new ApiError('Invalid credentials', 401);
             }
             const tokens = await generateTokenPair({

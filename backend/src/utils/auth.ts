@@ -41,9 +41,13 @@ export const trackAuthAnomaly = async (userId: number, ipAddress: string): Promi
 
 export const generateTokenPair = async (user: JwtPayload): Promise<TokenPair> => {
   try {
+    console.log('Generating tokens for user:', { id: user.id, role: user.role });
+    
     // Generate unique token IDs
     const accessTokenId = uuidv4();
     const refreshTokenId = uuidv4();
+
+    console.log('Generated token IDs:', { accessTokenId, refreshTokenId });
 
     const accessToken = jwt.sign(
       { 
@@ -54,6 +58,8 @@ export const generateTokenPair = async (user: JwtPayload): Promise<TokenPair> =>
       process.env.JWT_SECRET!,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
+
+    console.log('Access token generated successfully');
 
     const refreshToken = jwt.sign(
       { 
@@ -77,20 +83,28 @@ export const generateTokenPair = async (user: JwtPayload): Promise<TokenPair> =>
     }
 
     // Store both sessions in Redis with type prefixes and token IDs
-    await Promise.all([
-      redisClient.set(
-        `access_session:${user.id}:${accessTokenId}`, 
-        'active', 
-        'EX', 
-        900 // 15 minutes
-      ),
-      redisClient.set(
-        `refresh_session:${user.id}:${refreshTokenId}`, 
-        'active', 
-        'EX', 
-        604800 // 7 days
-      )
-    ]);
+    console.log('Storing sessions in Redis...');
+    
+    try {
+      await Promise.all([
+        redisClient.set(
+          `access_session:${user.id}:${accessTokenId}`, 
+          'active', 
+          'EX', 
+          900 // 15 minutes
+        ),
+        redisClient.set(
+          `refresh_session:${user.id}:${refreshTokenId}`, 
+          'active', 
+          'EX', 
+          604800 // 7 days
+        )
+      ]);
+      console.log('Redis sessions stored successfully');
+    } catch (redisError) {
+      console.error('Redis session storage failed:', redisError);
+      throw redisError;
+    }
 
     return { accessToken, refreshToken };
   } catch (error) {

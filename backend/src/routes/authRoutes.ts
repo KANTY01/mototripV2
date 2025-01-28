@@ -19,11 +19,12 @@ router.post('/logout',
   authController.logout
 );
 
-// Protected test route
-router.get('/protected',
+// Get current user route
+router.get('/me',
   validateAccessToken,
   (req, res) => {
-    res.json({ message: 'Protected route accessed' });
+    // Since validateAccessToken middleware sets req.user, we can return it
+    res.json({ user: req.user });
   }
 );
 
