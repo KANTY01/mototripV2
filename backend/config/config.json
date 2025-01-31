@@ -1,29 +1,26 @@
 {
   "development": {
-    "username": "piotr",
-    "password": "piotr",
-    "database": "motortrip_dev",
+    "username": "root",
+    "password": null,
+    "database": "database_development",
     "host": "127.0.0.1",
-    "port": 5432,
-    "dialect": "postgres",
-    "protocol": "postgres",
-    "dialectOptions": {
-      "ssl": false
-    }
+    "dialect": "sqlite",
+    "storage": "database/database.db"
   },
   "test": {
-    "use_env_variable": "DATABASE_URL",
-    "dialect": "postgres"
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "sqlite",
+    "storage": ":memory:"
   },
   "production": {
-    "use_env_variable": "DATABASE_URL",
-    "dialect": "postgres",
-    "protocol": "postgres",
-    "dialectOptions": {
-      "ssl": {
-        "require": true,
-        "rejectUnauthorized": false
-      }
-    }
+    "username": "root",
+    "password": null,
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "dialect": "sqlite",
+    "storage": "database/database.db"
   }
 }

@@ -1,40 +1,75 @@
-import { Sequelize } from 'sequelize';
-import config from '../config/config.js';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fs from 'fs';
+import { Sequelize, DataTypes } from 'sequelize'
+import dotenv from 'dotenv'
+import User from './user.js'
+import Trip from './trip.js'
+import TripImage from './tripImage.js'
+import Review from './review.js'
+import ReviewImage from './reviewImage.js'
+import Follower from './follower.js'
+import Subscription from './subscription.js'
+import Achievement from './achievement.js'
+import UserAchievement from './userAchievement.js'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config()
 
-const env = process.env.NODE_ENV || 'development';
-const { database, username, password, host, dialect } = config[env];
-
-const sequelize = new Sequelize(database, username, password, {
-  host,
-  dialect,
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: process.env.DATABASE_URL,
   logging: false
-});
+})
 
-const modelFiles = fs.readdirSync(__dirname)
-  .filter(file => 
-    file !== 'index.js' &&
-    file.endsWith('.js') &&
-    !file.includes('.test.js')
-  );
+const db = {}
 
-const models = {};
-for (const file of modelFiles) {
-  const { default: model } = await import(`./${file}`);
-  const createdModel = model(sequelize, Sequelize);
-  models[createdModel.name] = createdModel;
-}
+db.Sequelize = Sequelize
+db.sequelize = sequelize
 
-Object.values(models).forEach(model => {
-  if (model.associate) {
-    model.associate(models);
-  }
-});
+// Initialize models
+db.User = User(sequelize, DataTypes)
+db.Trip = Trip(sequelize, DataTypes)
+db.TripImage = TripImage(sequelize, DataTypes)
+db.Review = Review(sequelize, DataTypes)
+db.ReviewImage = ReviewImage(sequelize, DataTypes)
+db.Follower = Follower(sequelize, DataTypes)
+db.Subscription = Subscription(sequelize, DataTypes)
+db.Achievement = Achievement(sequelize, DataTypes)
+db.UserAchievement = UserAchievement(sequelize, DataTypes)
 
-export { sequelize };
-export default models;
+// Define associations
+db.User.hasMany(db.Trip, { foreignKey: 'created_by' })
+db.Trip.belongsTo(db.User, { foreignKey: 'created_by' })
+db.Trip.hasMany(db.TripImage, { foreignKey: 'trip_id' })
+db.TripImage.belongsTo(db.Trip, { foreignKey: 'trip_id' })
+db.User.hasMany(db.Review, { foreignKey: 'user_id' })
+db.Review.belongsTo(db.User, { foreignKey: 'user_id' })
+db.Trip.hasMany(db.Review, { foreignKey: 'trip_id' })
+db.Review.belongsTo(db.Trip, { foreignKey: 'trip_id' })
+db.Review.hasMany(db.ReviewImage, { foreignKey: 'review_id' })
+db.ReviewImage.belongsTo(db.Review, { foreignKey: 'review_id' })
+db.User.belongsToMany(db.User, {
+  as: 'Followers',
+  through: db.Follower,
+  foreignKey: 'following_id',
+  otherKey: 'follower_id'
+})
+db.User.belongsToMany(db.User, {
+  as: 'Following',
+  through: db.Follower,
+  foreignKey: 'follower_id',
+  otherKey: 'following_id'
+})
+db.User.hasMany(db.Subscription, { foreignKey: 'user_id' })
+db.Subscription.belongsTo(db.User, { foreignKey: 'user_id' })
+
+// Achievement associations
+db.User.belongsToMany(db.Achievement, {
+  through: db.UserAchievement,
+  foreignKey: 'user_id',
+  otherKey: 'achievement_id'
+})
+db.Achievement.belongsToMany(db.User, {
+  through: db.UserAchievement,
+  foreignKey: 'achievement_id',
+  otherKey: 'user_id'
+})
+
+export default db

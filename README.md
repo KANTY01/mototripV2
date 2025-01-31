@@ -1,117 +1,193 @@
-# MotoTrip
+# Motorcycle Trip Platform
 
-Welcome to **MotoTrip** - a comprehensive platform for motorcycle enthusiasts to plan, share, and join motorcycle trips. This service provides detailed trip announcements, allowing users to explore various routes and adventures. Each trip has unique information and is waiting for riders to join and create unforgettable memories.
+## Overview
 
+The Motorcycle Trip Platform is a web application designed for motorcycle enthusiasts to plan, discover, and share exciting motorcycle trips. Users can create their own trip routes, browse trips created by others, and connect with fellow riders. The platform also offers social features, premium content for subscribed users, and an admin dashboard for managing the application.
 
 ## Features
 
-- **Browse Trips:** Explore a wide range of motorcycle trip listings.
-- **Detailed Trip Profiles:** Each trip comes with a detailed profile including route, description, date, and organizer information.
-- **Advanced Search:** Filter searches based on trip type, location, and date to find your perfect adventure.
-- **User Accounts:** Create your account to post trip announcements or to interact with existing listings.
-- **Responsive Design:** Platform is fully responsive, making it easy to navigate on various devices.
+-   **User Authentication:**
+    -   Secure user registration and login
+    -   JWT-based authentication
+-   **Trip Management:**
+    -   Create, view, update, and delete trips
+    -   Filter trips by difficulty, distance, location, and date
+    -   View trip details, including route maps and images
+-   **Profile Management:**
+    -   View and edit user profiles
+    -   Upload and update profile pictures
+    -   Display user achievements
+-   **Social Features:**
+    -   Follow and unfollow other users
+    -   View a personalized feed of trips from followed users
+-   **Premium Content:**
+    -   Access exclusive premium trips with a subscription
+    -   Subscription management for users
+-   **Reviews and Ratings:**
+    -   Rate and review trips
+    -   View average ratings and reviews for each trip
+-   **Achievements:**
+    -   Earn achievements for completing trips, writing reviews, and other activities
+-   **Admin Dashboard:**
+    -   Manage users, trips, and reviews
+    -   View application statistics
+-   **Image Uploads:**
+    -   Upload images for trips and user avatars
+-   **Map Integration:**
+    -   View trip routes on an interactive map
+-   **Caching:**
+    -   Redis integration for caching frequently accessed data
+-   **Responsive Design:**
+    -   Mobile-friendly and responsive UI
 
 ## Technology Stack
 
-Project is built using a variety of technologies and tools to ensure efficiency, performance, and scalability. Below is a list of the key components:
+-   **Frontend:**
+    -   React
+    -   Redux Toolkit (for state management)
+    -   Material UI (for UI components)
+    -   Axios (for API communication)
+    -   React Router (for routing)
+    -   Google Maps API (for map integration)
+-   **Backend:**
+    -   Node.js
+    -   Express.js (for REST API)
+    -   Sequelize (as ORM)
+    -   SQLite (for development database)
+    -   JWT (for authentication)
+    -   Multer (for file uploads)
+    -   Redis (for caching)
+    -   Swagger (for API documentation)
+-   **Deployment:**
+    -   Docker
+    -   Docker Compose
 
-1. **Front-End:**
-   - HTML, CSS: For structuring, styling, and client-side logic.
+## Prerequisites
 
-2. **Back-End:**
-   - PHP: Primary server-side programming language.
-   - PostgreSQL: Robust and scalable database management system.
+-   Node.js (v18 or later)
+-   npm (v9 or later)
+-   Docker
+-   Docker Compose
+-   Git
 
-3. **Server:**
-   - Nginx: High-performance web server.
+## Setup Instructions
 
-4. **Containerization:**
-   - Docker: For creating, deploying, and running applications in containers.
-   - Docker Compose: For defining and running multi-container Docker applications.
+1. **Clone the repository:**
 
-5. **Version Control:**
-   - Git: For source code management.
-   - GitHub: For hosting the repository and facilitating version control and collaboration.
+    ```bash
+    git clone <repository-url>
+    cd motorcycle-trip-platform
+    ```
 
-## Database Design and Structure
+2. **Backend Setup:**
 
-The project includes a comprehensive design and structure for the database, ensuring efficient data storage and retrieval. Here are the key components:
+    -   Navigate to the `backend` directory:
+        ```bash
+        cd backend
+        ```
+    -   Install dependencies:
+        ```bash
+        npm install
+        ```
+    -   Create a `.env` file from the `.env.example` template and update the environment variables as needed.
+    -   Run database migrations:
+        ```bash
+        npx sequelize-cli db:migrate
+        ```
+    -   Seed the database with initial data:
+        ```bash
+        npm run seed
+        ```
 
-1. **Entity-Relationship Diagram (ERD):**
-   - The `erd.png` file in the main directory provides a visual representation of the database schema. This diagram is useful for understanding the relationships between different entities in the database.
-   - [View ERD](./diagram erd.png)
+3. **Frontend Setup:**
 
-2. **Database Schema:**
-   - The `script.sql` file contains the SQL commands to create the database structure. It defines tables, relationships, and other database elements.
-   - [View Database Script](./sql/quary.sql)
+    -   Navigate to the `frontend` directory:
+        ```bash
+        cd ../frontend
+        ```
+    -   Install dependencies:
+        ```bash
+        npm install
+        ```
+    -   Create a `.env` file and set the `VITE_API_URL` variable to point to your backend API (e.g., `VITE_API_URL=http://localhost:5000/api`).
 
-## Design Patterns
+4. **Run the Application with Docker Compose:**
 
-1. **MVC (Model-View-Controller)**
-   - Separates the application into Model, View, and Controller components.
-   - **Example:** `UserController.php`, `TripController.php`
-2. **Singleton**
-   - Ensures a class has only one instance and provides a global point of access to it.
-   - **Example:** `Database.php`
-3. **Repository**
-   - Abstracts the data layer, providing a modular structure.
-   - **Example:** `UserRepository.php`, `TripRepository.php`
-4. **Dependency Injection**
-   - Provides objects that an object requires instead of creating them directly.
-   - **Example:** `ServiceContainer.php`
-5. **Factory**
-   - Creates objects without specifying the exact class of object that will be created.
-   - **Example:** `TripFactory.php`
-
-## Installation
-
-Project is dockerized for easy setup and deployment. Follow these steps to get the project up and running:
-
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/yourusername/mototrip.git
-   cd mototrip
-   ```
-
-2. **Docker Setup:**
-   Ensure Docker and Docker Compose are installed on your system. 
-
-3. **Build Docker Images:**
-   ```bash
-   docker-compose build
-   ```
-
-4. **Start Docker Containers:**
-   ```bash
-   docker-compose up
-   ```
+    -   Navigate back to the project root directory:
+        ```bash
+        cd ..
+        ```
+    -   Start the application:
+        ```bash
+        docker-compose up --build
+        ```
 
 5. **Access the Application:**
-   After the containers are up and running, you can access the application through your web browser at `http://localhost:8080`.
 
-## Usage
+    The application will be available at the following URLs:
+    ```
+    Frontend: http://localhost:3000
+    Backend API: http://localhost:5000
+    API Documentation: http://localhost:5000/api-docs
+    ```
 
-### Home Page
-The home page showcases the latest trips and provides links to key functionalities of the site such as browsing all trips, logging in, registering.
+## Default Credentials
 
-### All Trips View
-This page allows users to browse all available motorcycle trips, with filtering options to help find the perfect trip.
+After running the seed script, the following test accounts are available:
 
-### Trip View
-This detailed view allows users to see full information about the trip, including route, descriptions, date, location, and contact details of the organizer.
+1. **Admin User**
+   - Email: admin@example.com
+   - Password: adminpassword
+   - Role: Administrator
+   - Features: Full access to admin dashboard and all platform features
 
-### Login and Registration View
-These pages allow users to create and manage their accounts, which is necessary for posting trips and using features that require authorization.
+2. **Premium User**
+   - Email: premium@example.com
+   - Password: premiumpassword
+   - Role: Premium User
+   - Features: Access to premium content, all basic features
 
-### Profile View
-The profile view lets users manage their personal information, password, and avatar.
+3. **Regular User**
+   - Email: user@example.com
+   - Password: userpassword
+   - Role: Basic User
+   - Features: Access to basic platform features
 
-### My Trips View
-Here, users can view their own posted trips.
+You can use any of these accounts to test different aspects of the application:
+- Use the admin account to access the admin dashboard
+- Use the premium account to access premium content
+- Use the regular user account to test basic features
+
+## Database Schema
+
+An Entity Relationship Diagram (ERD) is available in the `erd.md` file in the project root.
+
+## API Documentation
+
+The API documentation is generated using Swagger and is available at [http://localhost:5000/api-docs](http://localhost:5000/api-docs) when the application is running.
+
+## Architecture
+
+The application follows a monolithic architecture with a React frontend and a Node.js/Express backend. The backend uses Sequelize ORM to interact with the database and Redis for caching. The frontend communicates with the backend through a REST API.
+
+For more details, see the `ARCHITECTURE.md` file in the project root.
+
+## Testing
+
+The project includes unit and integration tests for the backend API. To run the tests:
+
+```bash
+cd backend
+npm test
+```
+
+## Deployment
+
+The application is containerized using Docker and can be deployed using Docker Compose. For production deployments, it's recommended to use a more robust database system (e.g., PostgreSQL, MySQL) and a container orchestration platform (e.g., Kubernetes).
 
 ## Contributing
 
-I am always looking to improve "MotoTrip" and appreciate any feedback or contributions. If you would like to contribute, please feel free to fork the repository and submit a pull request.
+Contributions are welcome! Please create a pull request with your proposed changes.
 
 ## License
 
