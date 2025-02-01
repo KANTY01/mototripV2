@@ -1,32 +1,26 @@
-# syntax=docker/dockerfile:1
+# Stage 1: Build the frontend application
 FROM node:20-alpine AS build
 
-# Set the working directory
 WORKDIR /app
 
-# Update npm to latest version
-RUN npm install -g npm@11.1.0
+# Copy package files from frontend directory
+COPY frontend/package*.json ./
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
 RUN npm install
+RUN npm install -g typescript
 
-# Copy source files
-COPY . .
-
-# Build the application
+# Copy frontend source files
+COPY frontend/ ./
 RUN npm run build
 
-# Production stage
+# Stage 2: Serve the frontend application using nginx
 FROM nginx:alpine
 
-# Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 3000
-EXPOSE 3000
+# Configure nginx
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
-# Start nginx
+EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]

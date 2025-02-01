@@ -33,6 +33,9 @@ export default (sequelize, DataTypes) => {
     },
     motorcycle_details: {
       type: DataTypes.TEXT
+    },
+    bio: {
+      type: DataTypes.TEXT
     }
   }, {
     timestamps: true,

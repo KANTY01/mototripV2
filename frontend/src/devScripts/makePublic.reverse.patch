@@ -1,0 +1,23 @@
+--- src/components/common/ProtectedRoute.tsx
++++ src/components/common/ProtectedRoute.tsx
+@@ -34,8 +34,17 @@
+   
+   if (isLoading) return <div>Loading...</div>;
+ 
+-  // DEV MODE: Skip all auth checks
+-  console.log('Development mode: Bypassing all authentication checks')
+-  return children
++  if (!isAuthenticated || !token) {
++    return <Navigate to="/login" replace state={{ from: location }} />
++  }
++  
++  if (skipAuthCheck) {
++    console.log('Skipping auth check for protected route')
++    return children
++  }
+ 
++  if (roles && user && !roles.includes(user.role)) {
++    console.log('Access denied - Required roles:', roles, 'User role:', user.role)
++    // Redirect to home with access denied message
++    return <Navigate to="/" replace state={{ message: 'Access denied: Insufficient permissions' }} />
++  }

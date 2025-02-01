@@ -1,0 +1,154 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { authApiSlice } from '../../api/auth'
+import { PURGE } from 'redux-persist'
+import { User } from '../../types/auth'
+
+// DEV_MODE: Always provide authenticated admin state
+const DEV_MODE = true
+
+interface AuthState {
+  token: string | null
+  user: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
+}
+
+// Development mode default state
+const devState: AuthState = {
+  token: 'dev-token',
+  user: {
+    id: 999999,
+    email: 'dev@example.com',
+    username: 'DevAdmin',
+    role: 'admin',
+    experience_level: 'expert',
+    preferred_routes: ['mountain', 'coastal'],
+    motorcycle_details: {
+      make: 'Development',
+      model: 'TestBike',
+      year: 2024
+    },
+    trip_count: 10,
+    follower_count: 5,
+    review_count: 3
+  },
+  isAuthenticated: true,
+  isLoading: false,
+  error: null
+}
+
+const initialState: AuthState = DEV_MODE ? devState : {
+  token: null,
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null
+}
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (state, action: PayloadAction<{ token: string; user: User }>) => {
+      if (!DEV_MODE) {
+        state.token = action.payload.token
+        state.user = action.payload.user
+        state.isAuthenticated = true
+        state.isLoading = false
+      }
+    },
+    logout: (state) => {
+      if (!DEV_MODE) {
+        state.token = null
+        state.user = null
+        state.isAuthenticated = false
+        state.isLoading = false
+        state.error = null
+      }
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(PURGE, (state) => {
+        if (!DEV_MODE) {
+          state.token = null
+          state.user = null
+          state.isAuthenticated = false
+          state.isLoading = false
+          state.error = null
+        }
+      })
+      .addMatcher(
+        authApiSlice.endpoints.login.matchPending,
+        (state) => {
+          if (!DEV_MODE) {
+            state.isLoading = true
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.login.matchFulfilled,
+        (state, { payload }) => {
+          if (!DEV_MODE) {
+            state.token = payload.token
+            state.user = payload.user
+            state.isAuthenticated = true
+            state.isLoading = false
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.login.matchRejected,
+        (state, { error }) => {
+          if (!DEV_MODE) {
+            state.isLoading = false
+            state.error = error.message || 'Login failed'
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.logout.matchFulfilled,
+        (state) => {
+          if (!DEV_MODE) {
+            state.token = null
+            state.user = null
+            state.isAuthenticated = false
+            state.isLoading = false
+            state.error = null
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.refreshToken.matchPending,
+        (state) => {
+          if (!DEV_MODE) {
+            state.isLoading = true
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.refreshToken.matchFulfilled,
+        (state, { payload }) => {
+          if (!DEV_MODE) {
+            state.token = payload.token
+            state.user = payload.user
+            state.isAuthenticated = true
+            state.isLoading = false
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.refreshToken.matchRejected,
+        (state, { error }) => {
+          if (!DEV_MODE) {
+            state.isLoading = false
+            state.error = error.message || 'Token refresh failed'
+          }
+        }
+      )
+  }
+})
+
+export const { setCredentials, logout } = authSlice.actions
+export default authSlice.reducer

@@ -1,0 +1,55 @@
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAppSelector } from '../../store/store'
+import type { RootState } from '../../store/store'
+import { useEffect, useState } from 'react'
+import { UserRole } from '../../types/auth'
+
+interface ProtectedRouteProps {
+  children: JSX.Element
+  roles?: UserRole[]
+  skipAuthCheck?: boolean
+}
+
+const ProtectedRoute = ({ children, roles, skipAuthCheck = false }: ProtectedRouteProps) => {
+  const { isAuthenticated, user, token } = useAppSelector((state: RootState) => state.auth)
+  const location = useLocation()
+  const [isLoading, setIsLoading] = useState(false); const skipAuth = true
+
+  useEffect(() => {
+    // Log auth state for debugging
+    console.log('Protected Route Auth State:', {
+      isAuthenticated,
+      userRole: user?.role,
+      hasToken: !!token,
+      requiredRoles: roles,
+      currentPath: location.pathname,
+      isLoading: token === null ? false : typeof token === 'string' && token.length > 0
+    })
+    
+    if (token === null || typeof token !== 'string' || token.length === 0) {
+      setIsLoading(false)
+    }
+  }, [isAuthenticated, user, token, roles, location])
+  console.log('ProtectedRoute isLoading state:', isLoading)
+  
+  if (isLoading) return <div>Loading...</div>;
+
+  if (!isAuthenticated || !token) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  if (skipAuthCheck) {
+    console.log('Skipping auth check for protected route')
+    return children
+  }
+
+  if (roles && user && !roles.includes(user.role)) {
+    console.log('Access denied - Required roles:', roles, 'User role:', user.role)
+    // Redirect to home with access denied message
+    return <Navigate to="/" replace state={{ message: 'Access denied: Insufficient permissions' }} />
+  }
+
+  return children
+}
+
+export default ProtectedRoute

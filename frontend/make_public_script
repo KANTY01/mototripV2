@@ -1,0 +1,311 @@
+#!/bin/bash
+
+echo "Enabling development mode with public pages access..."
+echo "This will modify the authentication system to make all pages public."
+
+# Function to backup a file
+backup_file() {
+    local file=$1
+    if [ ! -f "${file}.orig" ]; then
+        cp "$file" "${file}.orig"
+        echo "Created backup of $file"
+    fi
+}
+
+# Function to restore from backup
+restore_from_backup() {
+    local file=$1
+    if [ -f "${file}.orig" ]; then
+        cp "${file}.orig" "$file"
+        rm "${file}.orig"
+        echo "Restored $file from backup"
+    fi
+}
+
+# Function to modify ProtectedRoute.tsx
+modify_protected_route() {
+    local file="src/components/common/ProtectedRoute.tsx"
+    echo "Modifying $file..."
+    backup_file "$file"
+    
+    cat > "$file" << 'EOF'
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAppSelector } from '../../store/store'
+import type { RootState } from '../../store/store'
+import { useEffect, useState } from 'react'
+import { UserRole } from '../../types/auth'
+
+// DEV_MODE: Bypass all authentication
+const DEV_MODE = true
+
+interface ProtectedRouteProps {
+  children: JSX.Element
+  roles?: UserRole[]
+  skipAuthCheck?: boolean
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  // In dev mode, always render children without any checks
+  if (DEV_MODE) {
+    console.log('DEV MODE: Bypassing all authentication and role checks')
+    return children
+  }
+
+  const { isAuthenticated, user, token } = useAppSelector((state: RootState) => state.auth)
+  const location = useLocation()
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (token === null || typeof token !== 'string' || token.length === 0) {
+      setIsLoading(false)
+    }
+  }, [token])
+
+  if (isLoading) return <div>Loading...</div>
+
+  if (!isAuthenticated || !token) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  return children
+}
+
+export default ProtectedRoute
+EOF
+
+    echo "✓ Successfully modified $file"
+}
+
+# Function to modify axiosConfig.ts
+modify_axios_config() {
+    local file="src/api/axiosConfig.ts"
+    echo "Modifying $file..."
+    backup_file "$file"
+    
+    cat > "$file" << 'EOF'
+import axios from 'axios'
+import { store } from '../store/store'
+import { logout, setCredentials } from '../store/slices/authSlice'
+import { authApi } from './auth'
+
+// DEV_MODE: Bypass all API authentication
+const DEV_MODE = true
+
+const BASE_URL = import.meta.env.VITE_API_URL || '/api'
+
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
+api.interceptors.request.use(
+  (config) => {
+    if (DEV_MODE) {
+      config.headers.Authorization = 'Bearer dev-token'
+      return config
+    }
+
+    const token = store.getState().auth.token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (DEV_MODE) {
+      console.log('DEV MODE: Bypassing API error', error.response?.status)
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: { message: 'DEV MODE: Request successful' }
+        }
+      })
+    }
+
+    if (error.response?.status === 401) {
+      store.dispatch(logout())
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default api
+EOF
+
+    echo "✓ Successfully modified $file"
+}
+
+# Function to modify authSlice.ts
+modify_auth_slice() {
+    local file="src/store/slices/authSlice.ts"
+    echo "Modifying $file..."
+    backup_file "$file"
+    
+    cat > "$file" << 'EOF'
+import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { authApiSlice } from '../../api/auth'
+import { PURGE } from 'redux-persist'
+import { User } from '../../types/auth'
+
+// DEV_MODE: Always provide authenticated admin state
+const DEV_MODE = true
+
+interface AuthState {
+  token: string | null
+  user: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
+}
+
+// Development mode default state
+const devState: AuthState = {
+  token: 'dev-token',
+  user: {
+    id: 999999,
+    email: 'dev@example.com',
+    username: 'DevAdmin',
+    role: 'admin',
+    experience_level: 'expert',
+    preferred_routes: ['mountain', 'coastal'],
+    motorcycle_details: {
+      make: 'Development',
+      model: 'TestBike',
+      year: 2024
+    },
+    trip_count: 10,
+    follower_count: 5,
+    review_count: 3
+  },
+  isAuthenticated: true,
+  isLoading: false,
+  error: null
+}
+
+const initialState: AuthState = DEV_MODE ? devState : {
+  token: null,
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null
+}
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (state, action: PayloadAction<{ token: string; user: User }>) => {
+      if (!DEV_MODE) {
+        state.token = action.payload.token
+        state.user = action.payload.user
+        state.isAuthenticated = true
+        state.isLoading = false
+      }
+    },
+    logout: (state) => {
+      if (!DEV_MODE) {
+        state.token = null
+        state.user = null
+        state.isAuthenticated = false
+        state.isLoading = false
+        state.error = null
+      }
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(PURGE, (state) => {
+        if (!DEV_MODE) {
+          Object.assign(state, initialState)
+        }
+      })
+      .addMatcher(
+        authApiSlice.endpoints.login.matchPending,
+        (state) => {
+          if (!DEV_MODE) state.isLoading = true
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.login.matchFulfilled,
+        (state, { payload }) => {
+          if (!DEV_MODE) {
+            state.token = payload.token
+            state.user = payload.user
+            state.isAuthenticated = true
+            state.isLoading = false
+          }
+        }
+      )
+      .addMatcher(
+        authApiSlice.endpoints.login.matchRejected,
+        (state, { error }) => {
+          if (!DEV_MODE) {
+            state.isLoading = false
+            state.error = error.message || 'Login failed'
+          }
+        }
+      )
+  }
+})
+
+export const { setCredentials, logout } = authSlice.actions
+export default authSlice.reducer
+EOF
+
+    echo "✓ Successfully modified $file"
+}
+
+# Function to handle script termination
+cleanup() {
+    echo
+    echo "Script interrupted. Cleaning up..."
+    for file in "${files_modified[@]}"; do
+        restore_from_backup "$file"
+    done
+    exit 1
+}
+
+# Array to track modified files
+declare -a files_modified=()
+trap cleanup INT TERM
+
+# Main execution
+echo
+echo "Starting development mode setup..."
+
+# Modify all files
+if modify_protected_route && \
+   modify_axios_config && \
+   modify_auth_slice; then
+    files_modified+=(
+        "src/components/common/ProtectedRoute.tsx"
+        "src/api/axiosConfig.ts"
+        "src/store/slices/authSlice.ts"
+    )
+    echo
+    echo "✅ Development mode successfully enabled!"
+    echo "   - All pages are now public"
+    echo "   - Authentication checks are bypassed"
+    echo "   - API authentication is bypassed"
+    echo "   - Admin access is granted"
+    echo
+    echo "To start the development server:"
+    echo "npm run dev"
+    echo
+    echo "Note: This is for development only. Do not use in production!"
+else
+    echo
+    echo "❌ Failed to enable development mode"
+    # Restore any backups
+    for file in "${files_modified[@]}"; do
+        restore_from_backup "$file"
+    done
+    exit 1
+fi

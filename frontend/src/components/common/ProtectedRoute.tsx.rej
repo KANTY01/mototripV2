@@ -1,0 +1,11 @@
+--- ProtectedRoute.tsx
++++ ProtectedRoute.tsx
+@@ -13,7 +13,7 @@
+ const ProtectedRoute = ({ children, roles, skipAuthCheck = false }: ProtectedRouteProps) => {
+   const { isAuthenticated, user, token } = useAppSelector((state: RootState) => state.auth)
+   const location = useLocation()
+-  const [isLoading, setIsLoading] = useState(false)
++  const [isLoading, setIsLoading] = useState(false); const DEV_MODE = true
+ 
+   useEffect(() => {
+     // Log auth state for debugging

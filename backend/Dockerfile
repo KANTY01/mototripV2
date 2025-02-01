@@ -22,6 +22,10 @@ RUN mkdir -p uploads && chmod 777 uploads
 
 # Copy backend application code
 COPY backend/src/ ./src/
+COPY backend/migrations/ ./migrations/
+COPY backend/seeders/ ./seeders/
+COPY backend/scripts/initialize.sh ./scripts/
+COPY backend/sequelize-cli-wrapper.js ./
 COPY backend/.env* ./
 
 # Create SQLite database directory with proper permissions
@@ -30,5 +34,8 @@ RUN mkdir -p database && chmod 777 database
 # Expose the port that the application will run on
 EXPOSE 5000
 
-# Define the command to start the application
-CMD ["node", "./src/index.js"]
+# Make initialization script executable
+RUN chmod +x ./scripts/initialize.sh
+
+# Use initialization script as entry point
+CMD ["./scripts/initialize.sh"]

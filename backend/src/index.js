@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 import dotenv from 'dotenv'
 import swaggerUi from 'swagger-ui-express'
 import swaggerSpec from './swagger.js'
@@ -9,7 +10,9 @@ import userRoutes from './routes/users.js'
 import reviewRoutes from './routes/reviews.js'
 import socialRoutes from './routes/social.js'
 import premiumRoutes from './routes/premium.js'
+import adminRoutes from './routes/admin.js'
 import achievementRoutes from './routes/achievements.js'
+import galleryRoutes from './routes/gallery.js'
 import db from './models/index.js'
 
 dotenv.config()
@@ -34,6 +37,13 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'API is running' })
 })
 
+// Serve gallery images statically (before other routes to avoid auth middleware)
+app.use('/api/gallery', express.static(path.join(process.cwd(), '..', 'gallery')))
+app.use('/api/gallery', galleryRoutes)
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
+
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/trips', tripRoutes)
@@ -41,6 +51,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/social', socialRoutes)
 app.use('/api/premium', premiumRoutes)
+app.use('/api/admin', adminRoutes)
 app.use('/api/achievements', achievementRoutes)
 
 // Error handling middleware

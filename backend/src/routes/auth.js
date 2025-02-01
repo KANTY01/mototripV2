@@ -121,4 +121,45 @@ router.post('/login', async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh JWT token
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *       401:
+ *         description: Invalid or expired token
+ */
+router.post('/refresh', async (req, res) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '')
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' })
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const user = await User.findByPk(decoded.id)
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found.' })
+    }
+
+    const newToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    res.json({ token: newToken, user: { id: user.id, email: user.email, role: user.role } })
+  } catch (err) {
+    res.status(401).json({ message: 'Invalid token.', code: err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN' })
+  }
+})
+
 export default router

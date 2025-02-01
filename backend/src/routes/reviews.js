@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate } from '../middleware/auth.js'
+import { authenticate, authorize } from '../middleware/auth.js'
 import db from '../models/index.js'
 import multer from 'multer'
 
@@ -100,37 +100,82 @@ router.post('/:tripId', authenticate, upload.array('images'), async (req, res) =
  *         schema:
  *           type: integer
  *         description: ID of the trip to get reviews for
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [newest, oldest, highest_rating, lowest_rating]
+ *           default: newest
+ *         description: Sorting order for reviews
  *     responses:
  *       200:
  *         description: Successful operation
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Review'
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Review'
+ *                 totalPages:
+ *                   type: integer
  *       400:
  *         description: Failed to fetch reviews
  */
 router.get('/:tripId', async (req, res) => {
   const { tripId } = req.params
+  const { page = 1, sort = 'newest' } = req.query
+  const limit = 10 // Reviews per page
+  const offset = (page - 1) * limit
+
+  let order = []
+  switch(sort) {
+    case 'newest':
+      order = [['created_at', 'DESC']]
+      break
+    case 'oldest':
+      order = [['created_at', 'ASC']]
+      break
+    case 'highest_rating':
+      order = [['rating', 'DESC']]
+      break
+    case 'lowest_rating':
+      order = [['rating', 'ASC']]
+      break
+    default:
+      order = [['created_at', 'DESC']]
+  }
 
   try {
-    const reviews = await Review.findAll({
+    const { rows, count } = await Review.findAndCountAll({
       where: { trip_id: tripId },
-      include: [{
-        model: User,
-        attributes: ['username', 'avatar']
-      },
-      {
-        model: ReviewImage,
-        attributes: ['image_url']
-      }]
+      include: [
+        {
+          model: User,
+          attributes: ['username', 'avatar']
+        },
+        {
+          model: ReviewImage,
+          attributes: ['image_url']
+        }
+      ],
+      order,
+      limit,
+      offset
     })
 
-    res.json(reviews)
+    const totalPages = Math.ceil(count / limit)
+    res.json({ data: rows, totalPages })
   } catch (err) {
-    res.status(400).json({ message: 'Failed to fetch reviews', error: err.message })
+    res.status(400).json({ message: 'Failed to fetch reviews', error: err.message || 'Unknown error' })
   }
 })
 

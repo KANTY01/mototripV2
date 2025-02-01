@@ -17,7 +17,9 @@ export const checkPremium = async (req, res, next) => {
     `, [userId])
 
     if (!subscription) {
-      return res.status(403).json({ message: 'Premium content requires active subscription' })
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Premium content requires active subscription' })
+      }
     }
 
     next()

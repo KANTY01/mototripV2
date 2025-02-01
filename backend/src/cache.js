@@ -39,6 +39,14 @@ const cache = {
       console.error('Redis set error:', error)
       return null
     }
+  },
+  async del(key) {
+    try {
+      return await redisClient.del(key)
+    } catch (error) {
+      console.error('Redis del error:', error)
+      return null
+    }
   }
 }
 

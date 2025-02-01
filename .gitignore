@@ -1,29 +1,29 @@
 # Dependencies
-node_modules/
-**/node_modules/
-.pnp/
-.pnp.js
+node_modules
+package-lock.json
+
+# Environment variables
+# .env
+# .env.*
+# !.env.example
 
 # Build outputs
-dist/
-build/
-*.tsbuildinfo
+dist
+build
+.vite
+coverage
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-backend/.env
-backend/config/config.json
+# IDE specific files
+.vscode
+.idea
+*.sublime-workspace
+*.sublime-project
 
-# IDE and editor files
-.idea/
-.vscode/
+# OS specific files
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
-.DS_Store
 
 # Logs
 logs
@@ -31,185 +31,27 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Database files
-*.sqlite
-*.sqlite3
-dump.rdb
-.sequelizerc
-sequelize-meta.json
-sequelize-data.json
-*.pgerd
-
-# Testing
-coverage/
-.nyc_output/
-__tests__/coverage/
-backend/__tests__/coverage/
-frontend/__tests__/coverage/
-**/coverage-report/
-**/test-report.xml
-**/junit.xml
-frontend/coverage-e2e/
-backend/coverage-integration/
-
-# Frontend specific
-frontend/build/
-frontend/dist/
-frontend/.next/
-frontend/.cache/
-frontend/.vite/
-frontend/coverage/
-frontend/.storybook-out/
-frontend/storybook-static/
-frontend/.webpack/
-frontend/bundle-stats.html
-frontend/.size-snapshot.json
-
-# Cache
-.cache/
-.eslintcache
-.npm
-redis-data/
-.turbo/
-.swc/
+pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
-**/*.js.map
-**/*.d.ts.map
-**/*.js
-!jest.config.js
-!jest.config.ts
-!vite.config.ts
-!.sequelizerc
-!migrations/*.js
-!backend/scripts/*.js
-!frontend/scripts/*.js
+
+# Test coverage
+coverage
+.nyc_output
+
+# Docker
+.docker
+docker-compose.override.yml
 
 # Misc
-.DS_Store
-Thumbs.db
-*.bak
-*.tmp
-*.temp
-.env.*.local
-
-# Redis
-dump.rdb
-*.rdb
-redis-data/
-
-# Project specific
-backend/dist/
-frontend/dist/
-**/tsconfig.tsbuildinfo
-docs/agent_handoff.md
-docs/agent_prompt.md
-**/trip-images/
-**/user-uploads/
-**/temp-bookings/
-**/analytics-reports/
-**/audit-logs/
-
-# Temporary files
-*.swx
-*~
-.#*
-\#*#
-*.swn
-*.swo
-*.swp
-.history/
-
-# OS generated files
-.DS_Store*
-ehthumbs.db
-Icon?
-Thumbs.db
-._*
-
-# Editor directories and files
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-*.sublime-*
-*.code-workspace
-
-# Development specific
-.env.development
-.env.test
-.env.production
-backend/.env.*
-frontend/.env.*
-.env.*.local
-.env.local.*
-
-# Build artifacts
-frontend/build-stats.json
-frontend/bundle-analysis.json
-**/stats.json
-**/bundle-analysis/
-.build-temp/
-
-# Test reports
-**/test-results/
-**/jest-results/
-**/cypress/videos/
-**/cypress/screenshots/
-**/playwright-report/
-**/test-results.xml
-**/coverage-summary.json
-
-# Storybook
-frontend/storybook-static/
-.storybook-out/
-**/.storybook/static/
-storybook-static/
-
-# Package manager
-yarn.lock
-package-lock.json
-.pnpm-lock.yaml
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
-# Database backups
-*.backup
-*.bak
-*.dump
-*.sql
-*.gz
-*.zip
-db-backups/
-postgres-data/
-redis-backups/
-
-# Development tools
-.husky/_/
-.lint-staged.config.js
-.prettierrc.js
-.eslintrc.js
-!.eslintrc.json
-.stylelintrc.js
-package-lock.json
-backend/package-lock.json
-backend/node_modules/.package-lock.json
-
-# Project development
-.env.*.development
-.env.*.staging
-.env.*.production
-**/src/**/*.js.map
-**/src/**/*.d.ts
-**/dist/**/*
-**/tmp/**/*
+.cache
+.temp
+.tmp
+.git_disabled/
+backend/database/database.db
+database.db
+backend/database/database.db
+backend/dump.rdb
+backend/uploads/
+backend/sqlite.db

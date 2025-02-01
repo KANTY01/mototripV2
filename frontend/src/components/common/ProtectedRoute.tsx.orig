@@ -1,0 +1,46 @@
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAppSelector } from '../../store/store'
+import type { RootState } from '../../store/store'
+import { useEffect, useState } from 'react'
+import { UserRole } from '../../types/auth'
+
+// DEV_MODE: Bypass all authentication
+const DEV_MODE = true
+
+interface ProtectedRouteProps {
+  children: JSX.Element
+  roles?: UserRole[]
+  skipAuthCheck?: boolean
+}
+
+const ProtectedRoute = ({ children, roles, skipAuthCheck = false }: ProtectedRouteProps) => {
+  if (DEV_MODE) {
+    console.log('DEV MODE: Authentication disabled - all pages public')
+    return children
+  }
+
+  const { isAuthenticated, user, token } = useAppSelector((state: RootState) => state.auth)
+  const location = useLocation()
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (token === null || typeof token !== 'string' || token.length === 0) {
+      setIsLoading(false)
+    }
+  }, [token])
+  
+  if (isLoading) return <div>Loading...</div>;
+
+  if (!isAuthenticated || !token) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  if (roles && user && !roles.includes(user.role)) {
+    console.log('Access denied - Required roles:', roles, 'User role:', user.role)
+    return <Navigate to="/" replace state={{ message: 'Access denied: Insufficient permissions' }} />
+  }
+
+  return children
+}
+
+export default ProtectedRoute

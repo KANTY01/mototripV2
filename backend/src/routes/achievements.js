@@ -86,8 +86,36 @@ router.get('/user/:userId', authenticate, [
       return res.status(404).json({ message: 'User not found' })
     }
 
-    res.json(user.Achievements)
-  } catch (err) {
+    // Transform achievements to match frontend expectations
+    const transformedAchievements = user.Achievements.map(achievement => {
+      // Parse criteria string into object
+      let criteriaObj = {
+        type: 'other',
+        value: 0
+      }
+      try {
+        const criteria = JSON.parse(achievement.criteria)
+        if (criteria.type && criteria.value) {
+          criteriaObj = criteria
+        }
+      } catch (e) {
+        console.error('Failed to parse criteria:', e)
+      }
+
+      return {
+        id: achievement.id,
+        name: achievement.name,
+        description: achievement.description,
+        category: criteriaObj.type === 'trips' || criteriaObj.type === 'reviews' ? criteriaObj.type : 'other',
+        criteria: criteriaObj,
+        icon: '🏆',
+        unlocked: true,
+        unlockDate: achievement.UserAchievement.achieved_at,
+        progress: 100, // Since it's achieved
+      }
+    })
+ 
+    res.json(transformedAchievements)  } catch (err) {
     res.status(500).json({ message: 'Failed to fetch user achievements', error: err.message })
   }
 })

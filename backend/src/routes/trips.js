@@ -1,13 +1,13 @@
-import express from 'express'
-import { authenticate } from '../middleware/auth.js'
-import { checkPremium } from '../middleware/premium.js'
-import db from '../models/index.js'
-import multer from 'multer'
-import cache from '../cache.js'
+import express from "express";
+import { authenticate } from "../middleware/auth.js";
+import { checkPremium } from "../middleware/premium.js";
+import db from "../models/index.js";
+import multer from "multer";
+import cache from "../cache.js";
 
-const router = express.Router()
-const upload = multer({ dest: 'uploads/' })
-const { Trip, TripImage, User } = db
+const router = express.Router();
+const upload = multer({ dest: "uploads/" });
+const { Trip, TripImage, User } = db;
 
 /**
  * @swagger
@@ -72,9 +72,17 @@ const { Trip, TripImage, User } = db
  *       401:
  *         description: Unauthorized
  */
-router.post('/', authenticate, upload.array('images'), async (req, res) => {
-  const { title, description, start_date, end_date, difficulty, distance, is_premium } = req.body
-  const userId = req.user.id
+router.post("/", authenticate, upload.array("images"), async (req, res) => {
+  const {
+    title,
+    description,
+    start_date,
+    end_date,
+    difficulty,
+    distance,
+    is_premium,
+  } = req.body;
+  const userId = req.user.id;
 
   try {
     const trip = await Trip.create({
@@ -85,23 +93,27 @@ router.post('/', authenticate, upload.array('images'), async (req, res) => {
       difficulty,
       distance,
       created_by: userId,
-      is_premium: is_premium === 'true' ? true : false
-    })
+      is_premium: is_premium === "true" ? true : false,
+    });
 
     // Handle image uploads
     if (req.files && req.files.length > 0) {
-      const images = req.files.map(file => ({
+      const images = req.files.map((file) => ({
         trip_id: trip.id,
-        image_url: file.path
-      }))
-      await TripImage.bulkCreate(images)
+        image_url: file.path,
+      }));
+      await TripImage.bulkCreate(images);
     }
 
-    res.status(201).json({ message: 'Trip created successfully', tripId: trip.id })
+    res
+      .status(201)
+      .json({ message: "Trip created successfully", tripId: trip.id });
   } catch (err) {
-    res.status(400).json({ message: 'Trip creation failed', error: err.message })
+    res
+      .status(400)
+      .json({ message: "Trip creation failed", error: err.message });
   }
-})
+});
 
 /**
  * @swagger
@@ -121,44 +133,28 @@ router.post('/', authenticate, upload.array('images'), async (req, res) => {
  *       400:
  *         description: Failed to fetch trips
  */
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const cacheKey = 'trips:all'
-    const cachedTrips = await cache.get(cacheKey)
-
-    let trips
-    if (cachedTrips) {
-      try {
-        trips = JSON.parse(cachedTrips)
-      } catch (parseError) {
-        console.error('Failed to parse cached trips:', parseError)
-        // Continue to fetch from database if parse fails
-      }
-    }
-
-    if (!trips) {
-      trips = await Trip.findAll({
-        include: [{
+    const trips = await Trip.findAll({
+      include: [
+        {
           model: User,
-          attributes: ['username']
-        }]
-      })
-      
-      // Cache the results if successful
-      if (trips) {
-        await cache.set(cacheKey, JSON.stringify(trips), 'EX', 3600) // Cache for 1 hour
-      }
-    }
+          attributes: ["username"],
+        },
+      ],
+    });
 
     if (!trips) {
-      return res.status(404).json({ message: 'No trips found' })
+      return res.status(404).json({ message: "No trips found" });
     }
 
-    res.json(trips)
+    res.json(trips || []);
   } catch (err) {
-    res.status(400).json({ message: 'Failed to fetch trips', error: err.message })
+    res
+      .status(400)
+      .json({ message: "Failed to fetch trips", error: err.message });
   }
-})
+});
 
 /**
  * @swagger
@@ -187,19 +183,19 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Trip not found
  */
-router.get('/:id', async (req, res) => {
-  const { id } = req.params
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const cacheKey = `trip:${id}`
-    const cachedTrip = await cache.get(cacheKey)
+    const cacheKey = `trip:${id}`;
+    const cachedTrip = await cache.get(cacheKey);
 
-    let trip
+    let trip;
     if (cachedTrip) {
       try {
-        trip = JSON.parse(cachedTrip)
+        trip = JSON.parse(cachedTrip);
       } catch (parseError) {
-        console.error(`Failed to parse cached trip ${id}:`, parseError)
+        console.error(`Failed to parse cached trip ${id}:`, parseError);
         // Continue to fetch from database if parse fails
       }
     }
@@ -209,32 +205,39 @@ router.get('/:id', async (req, res) => {
         include: [
           {
             model: User,
-            attributes: ['username', 'avatar']
+            attributes: ["username", "avatar"],
           },
           {
             model: TripImage,
-            attributes: ['image_url']
-          }
-        ]
-      })
+            attributes: ["image_url"],
+          },
+        ],
+      });
 
       if (!trip) {
-        return res.status(404).json({ message: 'Trip not found' })
+        return res.status(404).json({ message: "Trip not found" });
       }
 
+if (req.user && req.user.role === 'admin') return res.json(trip);
       if (trip.is_premium) {
-        return res.status(403).json({ message: 'This is a premium trip. Please subscribe to access.' })
+        return res
+          .status(403)
+          .json({
+            message: "This is a premium trip. Please subscribe to access.",
+          });
       }
 
       // Cache the trip if found
-      await cache.set(cacheKey, JSON.stringify(trip), 'EX', 3600) // Cache for 1 hour
+      await cache.set(cacheKey, JSON.stringify(trip), "EX", 3600); // Cache for 1 hour
     }
 
-    res.json(trip)
+    res.json(trip);
   } catch (err) {
-    res.status(400).json({ message: 'Failed to fetch trip details', error: err.message })
+    res
+      .status(400)
+      .json({ message: "Failed to fetch trip details", error: err.message });
   }
-})
+});
 
 /**
  * @swagger
@@ -267,19 +270,21 @@ router.get('/:id', async (req, res) => {
  *       404:
  *         description: Trip not found
  */
-router.get('/:id/premium', authenticate, checkPremium, async (req, res) => {
-  const { id } = req.params
+router.get("/:id/premium", authenticate, checkPremium, async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const cacheKey = `trip:${id}:premium`
-    const cachedTrip = await cache.get(cacheKey)
+    const cacheKey = `trip:${id}:premium`;
+    const cachedTrip = await cache.get(cacheKey);
 
-    let trip
+    let trip;
     if (cachedTrip) {
       try {
-        trip = JSON.parse(cachedTrip)
+        if (req.user && req.user.role === 'admin') return res.json(JSON.parse(cachedTrip));
+
+        trip = JSON.parse(cachedTrip);
       } catch (parseError) {
-        console.error(`Failed to parse cached premium trip ${id}:`, parseError)
+        console.error(`Failed to parse cached premium trip ${id}:`, parseError);
         // Continue to fetch from database if parse fails
       }
     }
@@ -289,27 +294,73 @@ router.get('/:id/premium', authenticate, checkPremium, async (req, res) => {
         include: [
           {
             model: User,
-            attributes: ['username', 'avatar']
+            attributes: ["username", "avatar"],
           },
           {
             model: TripImage,
-            attributes: ['image_url']
-          }
-        ]
-      })
+            attributes: ["image_url"],
+          },
+        ],
+      });
 
       if (!trip) {
-        return res.status(404).json({ message: 'Trip not found' })
+        return res.status(404).json({ message: "Trip not found" });
       }
 
       // Cache the trip if found
-      await cache.set(cacheKey, JSON.stringify(trip), 'EX', 3600) // Cache for 1 hour
+      await cache.set(cacheKey, JSON.stringify(trip), "EX", 3600); // Cache for 1 hour
     }
 
-    res.json(trip)
+    res.json(trip);
   } catch (err) {
-    res.status(400).json({ message: 'Failed to fetch trip', error: err.message })
+    res
+      .status(400)
+      .json({ message: "Failed to fetch trip", error: err.message });
   }
-})
+});
 
-export default router
+/**
+ * @swagger
+ * /api/users/{userId}/trips:
+ *   get:
+ *     summary: Get all trips for a specific user
+ *     tags: [Trips]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the user whose trips to get
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *     responses:
+ *       200:
+ *         description: Successful operation
+ *       404:
+ *         description: User not found or no trips found
+ */
+router.get("/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  try {
+    const trips = await Trip.findAll({
+      where: { created_by: userId },
+      include: [{ model: User, attributes: ["username", "avatar"] }],
+      limit,
+      offset,
+      order: [["created_at", "DESC"]]
+    });
+    res.json(trips);
+  } catch (err) {
+    res.status(400).json({ message: "Failed to fetch user trips", error: err.message });
+  }
+});
+
+export default router;

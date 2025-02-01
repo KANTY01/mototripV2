@@ -1,0 +1,83 @@
+#!/bin/bash
+
+echo "Starting protected routes check..."
+echo "This script will open each protected route to verify access."
+
+# Function to wait for user input
+wait_for_input() {
+    echo
+    echo "Press Enter to continue to next route..."
+    read
+}
+
+# Function to check if development server is running
+check_server() {
+    if ! curl -s http://localhost:3000 > /dev/null; then
+        echo "❌ Development server is not running!"
+        echo "Please start the server with: npm run dev"
+        exit 1
+    fi
+}
+
+# Function to open a route and wait
+check_route() {
+    local route=$1
+    local description=$2
+    echo
+    echo "Checking route: $route"
+    echo "Description: $description"
+    
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        open "http://localhost:3000$route"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        xdg-open "http://localhost:3000$route"
+    else
+        # Windows
+        start "http://localhost:3000$route"
+    fi
+    
+    wait_for_input
+}
+
+# Main execution
+echo "Verifying development server..."
+check_server
+
+echo "Starting route checks..."
+echo "Each route will open in your default browser."
+echo "Check if the page loads correctly and has proper content."
+
+# Check public routes
+check_route "/" "Landing Page (public)"
+check_route "/contact" "Contact Page (public)"
+check_route "/gallery" "Gallery Page (public)"
+
+# Check each protected route
+check_route "/profile" "User Profile Page (requires auth)"
+
+check_route "/profile/edit" "Profile Edit Page (requires auth)"
+
+check_route "/admin" "Admin Dashboard (requires admin role)"
+
+check_route "/admin/statistics" "Admin Statistics (requires admin role)"
+
+check_route "/admin/trips" "Trip Management (requires admin role)"
+
+check_route "/admin/users" "User Management (requires admin role)"
+
+# For premium content, we need a trip ID
+# Let's try with ID 1 as an example
+check_route "/trips/1/premium" "Premium Trip Content (requires premium/admin role)"
+
+# Check 404 page
+check_route "/non-existent-route" "404 Not Found Page"
+
+echo
+echo "✅ Route check complete!"
+echo "If any routes failed to load or showed access denied:"
+echo "1. Verify the make_public_script was run"
+echo "2. Check browser console for errors"
+echo "3. Clear browser storage and refresh"
+echo "4. Restart the development server"
