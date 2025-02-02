@@ -1,4 +1,4 @@
-import { Box, Container, Grid, Paper, CircularProgress, Alert } from '@mui/material';
+import { Box, Container, Grid, Paper, CircularProgress, Alert, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchProfile } from '../store/slices/userSlice';

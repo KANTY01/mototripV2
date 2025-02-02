@@ -1,14 +1,19 @@
 erDiagram
+    %% Note: This diagram shows both implemented and planned database structures
+    %% (Implemented) indicates fully functional features
+    %% (Basic) indicates basic implementation
+    %% (Planned) indicates features not yet implemented
+
     users {
         INTEGER id PK
         TEXT email UNIQUE "NOT NULL"
         TEXT password "NOT NULL"
         TEXT username "NOT NULL"
-        TEXT avatar
+        TEXT avatar "Basic profile image"
         TEXT role "DEFAULT 'user' NOT NULL"
-        TEXT experience_level
-        TEXT bio "User biography"
-        JSON preferences "User preferences JSON"
+        TEXT experience_level "Basic user level"
+        TEXT bio "Basic user info"
+        JSON preferences "Basic user settings"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
         DATETIME updated_at "DEFAULT CURRENT_TIMESTAMP"
     }
@@ -21,7 +26,7 @@ erDiagram
         DATE end_date "NOT NULL"
         TEXT difficulty "NOT NULL"
         REAL distance "NOT NULL"
-        JSON route_data "Stored route information"
+        JSON route_data "Basic route data"
         BOOLEAN is_premium "DEFAULT false"
         INTEGER created_by FK "NOT NULL"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
@@ -32,7 +37,7 @@ erDiagram
         INTEGER id PK
         INTEGER trip_id FK "NOT NULL"
         TEXT image_url "NOT NULL"
-        INTEGER order_index "Image ordering"
+        INTEGER order_index "Basic image ordering"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
@@ -42,6 +47,8 @@ erDiagram
         INTEGER user_id FK "NOT NULL"
         REAL rating "NOT NULL"
         TEXT content "NOT NULL"
+        INTEGER reports "DEFAULT 0 (Basic)"
+        TEXT status "Review moderation status"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
         DATETIME updated_at "DEFAULT CURRENT_TIMESTAMP"
     }
@@ -50,7 +57,7 @@ erDiagram
         INTEGER id PK
         INTEGER review_id FK "NOT NULL"
         TEXT image_url "NOT NULL"
-        INTEGER order_index "Image ordering"
+        INTEGER order_index "Basic image ordering"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
@@ -69,10 +76,21 @@ erDiagram
         DATE start_date "NOT NULL"
         DATE end_date "NOT NULL"
         TEXT status "DEFAULT 'active'"
-        DECIMAL amount "Subscription amount"
-        TEXT payment_method
+        DECIMAL amount "Basic subscription amount"
+        TEXT payment_method "Basic payment info"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
         DATETIME updated_at "DEFAULT CURRENT_TIMESTAMP"
+    }
+
+    billing_history {
+        INTEGER id PK
+        INTEGER subscription_id FK "NOT NULL"
+        DECIMAL amount "NOT NULL"
+        TEXT description "NOT NULL"
+        TEXT status "NOT NULL"
+        TEXT payment_method "NOT NULL"
+        DATETIME transaction_date "NOT NULL"
+        DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
     achievements {
@@ -98,24 +116,26 @@ erDiagram
         INTEGER user_id FK "NOT NULL"
         BOOLEAN email_notifications "DEFAULT true"
         BOOLEAN push_notifications "DEFAULT true"
-        TEXT preferred_units "km/miles preference"
-        TEXT theme "light/dark mode"
-        TEXT language "UI language preference"
+        TEXT preferred_units "Basic preference"
+        TEXT theme "Basic theme setting"
+        TEXT language "Basic language setting"
         DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
         DATETIME updated_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
-    users ||--o{ trips : "creates"
-    users ||--o{ reviews : "writes"
-    users ||--o{ followers : "follows"
-    users ||--o{ followers : "followed by"
-    users ||--o{ subscriptions : "subscribes to"
-    users ||--o{ user_achievements : "earns"
-    users ||--|| user_preferences : "has"
+    %% Implemented Relationships
+    users ||--o{ trips : "creates (Implemented)"
+    users ||--o{ reviews : "writes (Implemented)"
+    trips ||--o{ trip_images : "contains (Implemented)"
+    trips ||--o{ reviews : "receives (Implemented)"
+    reviews ||--o{ review_images : "contains (Implemented)"
+    users ||--|| user_preferences : "has (Basic)"
     
-    trips ||--o{ trip_images : "contains"
-    trips ||--o{ reviews : "receives"
+    %% Basic Implementation
+    users ||--o{ followers : "follows (Basic)"
+    users ||--o{ followers : "followed by (Basic)"
+    users ||--o{ subscriptions : "subscribes to (Basic)"
     
-    reviews ||--o{ review_images : "contains"
-    
-    achievements ||--o{ user_achievements : "awarded to"
+    %% Planned Relationships
+    achievements ||--o{ user_achievements : "awarded to (Planned)"
+    subscriptions ||--o{ billing_history : "has (Planned)"

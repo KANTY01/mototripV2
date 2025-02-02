@@ -89,17 +89,32 @@ router.get('/user/:userId', authenticate, [
     // Transform achievements to match frontend expectations
     const transformedAchievements = user.Achievements.map(achievement => {
       // Parse criteria string into object
-      let criteriaObj = {
-        type: 'other',
-        value: 0
-      }
+      let criteriaObj;
       try {
-        const criteria = JSON.parse(achievement.criteria)
-        if (criteria.type && criteria.value) {
-          criteriaObj = criteria
-        }
+        // Try parsing as JSON first
+        criteriaObj = JSON.parse(achievement.criteria);
       } catch (e) {
-        console.error('Failed to parse criteria:', e)
+        // If not JSON, parse the string format (e.g., "5_trips")
+        const parts = achievement.criteria.split('_');
+        if (parts.length >= 2) {
+          const value = parseInt(parts[0]);
+          const type = parts.slice(1).join('_');
+          criteriaObj = {
+            type: type,
+            value: value
+          };
+        } else {
+          // Fallback for invalid format
+          criteriaObj = {
+            type: 'other',
+            value: 0
+          };
+          console.error('Invalid criteria format:', achievement.criteria);
+        }
+      }
+      
+      if (!criteriaObj.type || !criteriaObj.value) {
+        console.error('Invalid criteria object:', criteriaObj);
       }
 
       return {

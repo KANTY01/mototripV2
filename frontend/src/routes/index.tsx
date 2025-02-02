@@ -3,6 +3,7 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import TripList from '../components/trips/TripList';
 import TripDetails from '../components/trips/TripDetails';
 import LoginForm from '../components/auth/LoginForm';
+import AdminReviewsPage from '../pages/AdminReviewsPage';
 import Dashboard from '../components/admin/Dashboard';
 import Profile from '../pages/Profile';
 import UserFeed from '../components/social/UserFeed';
@@ -17,9 +18,10 @@ import UserManagement from '../components/admin/UserManagement';
 import ProfileEditPage from '../pages/ProfileEditPage';
 import PremiumContent from '../components/trips/PremiumContent';
 import PremiumRoutePlanner from '../components/premium/PremiumRoutePlanner';
-import UserTripsContainer from '../components/trips/UserTripsContainer';
-import ReviewListContainer from '../components/trips/ReviewListContainer';
+import MyTrips from '../pages/MyTrips';
+import MyReviews from '../pages/MyReviews';
 import AdminTripRoutes from '../components/admin/AdminTripRoutes';
+
 
 export const router = createBrowserRouter([
   {
@@ -66,7 +68,7 @@ export const router = createBrowserRouter([
         path: 'my-trips',
         element: (
           <ProtectedRoute>
-            <UserTripsContainer />
+            <MyTrips />
           </ProtectedRoute>
         )
       },
@@ -74,7 +76,7 @@ export const router = createBrowserRouter([
         path: 'my-reviews',
         element: (
           <ProtectedRoute>
-            <ReviewListContainer userOnly={true} />
+            <MyReviews />
           </ProtectedRoute>
         )
       },
@@ -115,6 +117,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles={['admin']}>
             <UserManagement />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'admin/reviews',
+        element: (
+          <ProtectedRoute roles={['admin']}>
+            <AdminReviewsPage />
           </ProtectedRoute>
         )
       },

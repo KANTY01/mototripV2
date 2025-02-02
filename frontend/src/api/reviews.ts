@@ -1,12 +1,16 @@
 import api from './axiosConfig'
 
-interface Review {
+export interface Review {
   id: number
   trip_id: number
   user: {
     id: number
     username: string
     avatar?: string
+  }
+  trip: {
+    title: string
+    created_by?: number
   }
   votes: {
     upvotes: number
@@ -19,6 +23,7 @@ interface Review {
   content: string
   images?: string[]
   created_at: string
+  status?: 'approved' | 'rejected' | null
 }
 
 interface PaginatedResponse<T> {
@@ -31,26 +36,9 @@ interface PaginatedResponse<T> {
   }
 }
 
-export type ReviewFormData = {
-  rating: number
-  content: string
-  images?: File[]
-  removed_images?: string[]
-}
-
 export const reviewApi = {
-  createReview: async (tripId: number, data: {
-      rating: number
-      content: string
-      images?: File[]
-    }) => {
-    const formData = new FormData()
-    formData.append('rating', data.rating.toString())
-    formData.append('content', data.content)
-    if (data.images) {
-      data.images.forEach(file => formData.append('images', file))
-    }
-    const response = await api.post(`/trips/${tripId}/reviews`, formData, {
+  createReview: async (tripId: number, formData: FormData) => {
+    const response = await api.post(`/reviews/${tripId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       } 
@@ -69,20 +57,8 @@ export const reviewApi = {
     return response.data
   },
   
-  updateReview: async (reviewId: number, data: ReviewFormData) => {
-    const formData = new FormData()
-    formData.append('rating', data.rating.toString())
-    formData.append('content', data.content)
-    
-    if (data.images) {
-      data.images.forEach(file => formData.append('new_images', file))
-    }
-    
-    if (data.removed_images) {
-      formData.append('removed_images', JSON.stringify(data.removed_images))
-    }
-
-    const response = await api.patch(`/trips/reviews/${reviewId}`, formData, {
+  updateReview: async (reviewId: number, formData: FormData) => {
+    const response = await api.patch(`/reviews/update/${reviewId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -91,22 +67,50 @@ export const reviewApi = {
   },
 
   voteReview: async (reviewId: number, voteType: 'up' | 'down') => {
-    const response = await api.post(`/trips/reviews/${reviewId}/vote`, {
+    const response = await api.post(`/reviews/vote/${reviewId}`, {
       vote_type: voteType
     })
     return response.data
   },
 
   reportReview: async (reviewId: number, reason: string) => {
-    const response = await api.post(`/trips/reviews/${reviewId}/reports`, {
+    const response = await api.post(`/reviews/${reviewId}/reports`, {
       reason
     })
     return response.data
   },
 
   getReviewReports: async (reviewId: number) => {
-    const response = await api.get(`/trips/reviews/${reviewId}/reports`)
+    const response = await api.get(`/reviews/${reviewId}/reports`)
     return response.data
+  },
+
+  // Get reviews written by a user
+  getUserReviews: async (userId: number, page: number = 1, perPage: number = 10): Promise<PaginatedResponse<Review>> => {
+    const response = await api.get(`/reviews/user/${userId}`, {
+      params: {
+        page,
+        per_page: perPage
+      }
+    })
+    return response.data
+  },
+
+  // Get reviews for trips created by a user
+  getTripOwnerReviews: async (userId: number, page: number = 1, perPage: number = 10): Promise<PaginatedResponse<Review>> => {
+    const response = await api.get(`/reviews/trip-owner/${userId}`, {
+      params: {
+        page,
+        per_page: perPage
+      }
+    })
+    return response.data
+  },
+
+  // Get a single review by ID
+  getReviewById: async (reviewId: number) => {
+    const response = await api.get(`/reviews/single/${reviewId}`)
+    return response.data as Review
   },
 
   // Admin endpoints
@@ -115,10 +119,11 @@ export const reviewApi = {
     userId?: number
     tripId?: number
     page?: number
-    perPage?: number
-  } = {}) => {
+    status?: 'approved' | 'rejected' | null
+    per_page?: number
+  } = {}): Promise<PaginatedResponse<Review>> => {
     const response = await api.get('/admin/reviews', { params: filters })
-    return response.data
+    return response.data as PaginatedResponse<Review>
   },
 
   adminDeleteReview: async (reviewId: number) => {
@@ -134,13 +139,9 @@ export const reviewApi = {
     const response = await api.patch(`/admin/reviews/${reviewId}`, data)
     return response.data
   },
-
-  getReviewById: async (reviewId: number) => {
-    const response = await api.get(`/trips/reviews/${reviewId}`)
-    return response.data as Review
-  },
-
+  
   deleteReview: async (reviewId: number) => {
-    await api.delete(`/trips/reviews/${reviewId}`)
+    const response = await api.delete(`/reviews/${reviewId}`)
+    return response.data.id
   }
 }

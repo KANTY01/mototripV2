@@ -69,7 +69,8 @@ router.post('/:tripId', authenticate, upload.array('images'), async (req, res) =
       trip_id: tripId,
       user_id: userId,
       rating,
-      content
+      content,
+      status: null // Pending approval
     })
 
     // Handle image uploads
@@ -81,7 +82,14 @@ router.post('/:tripId', authenticate, upload.array('images'), async (req, res) =
       await ReviewImage.bulkCreate(images)
     }
 
-    res.status(201).json({ message: 'Review created successfully', reviewId: review.id })
+    // Send back complete review data
+    const reviewData = {
+      ...review.toJSON(),
+      user: req.user,
+      votes: { upvotes: 0, downvotes: 0 }
+    }
+
+    res.status(201).json(reviewData)
   } catch (err) {
     res.status(400).json({ message: 'Review creation failed', error: err.message })
   }
@@ -130,7 +138,7 @@ router.post('/:tripId', authenticate, upload.array('images'), async (req, res) =
  *       400:
  *         description: Failed to fetch reviews
  */
-router.get('/:tripId', async (req, res) => {
+router.get('/:tripId', authenticate, async (req, res) => {
   const { tripId } = req.params
   const { page = 1, sort = 'newest' } = req.query
   const limit = 10 // Reviews per page
@@ -156,7 +164,10 @@ router.get('/:tripId', async (req, res) => {
 
   try {
     const { rows, count } = await Review.findAndCountAll({
-      where: { trip_id: tripId },
+      where: { 
+        trip_id: tripId,
+        status: 'approved' // Only show approved reviews
+      },
       include: [
         {
           model: User,
@@ -176,6 +187,197 @@ router.get('/:tripId', async (req, res) => {
     res.json({ data: rows, totalPages })
   } catch (err) {
     res.status(400).json({ message: 'Failed to fetch reviews', error: err.message || 'Unknown error' })
+  }
+})
+
+// Update a review
+router.patch('/update/:reviewId', authenticate, upload.array('images'), async (req, res) => {
+  const { reviewId } = req.params
+  const userId = req.user.id
+  const { rating, content } = req.body
+
+  try {
+    const review = await Review.findByPk(reviewId)
+    if (!review || !review.id) {
+      return res.status(404).json({ message: 'Review not found' })
+    }
+
+    if (review.user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized to update this review' })
+    }
+
+    await review.update({
+      rating,
+      content
+    })
+
+    // Format the created_at date to ISO string
+    review.created_at = review.created_at.toISOString()
+
+    // Handle image uploads
+    if (req.files && req.files.length > 0) {
+      const images = req.files.map(file => ({
+        review_id: review.id,
+        image_url: file.path
+      }))
+      await ReviewImage.bulkCreate(images)
+    }
+
+    // Fetch the updated review with user and images
+    const updatedReview = await Review.findByPk(review.id, {
+      include: [
+        { model: User, attributes: ['username', 'avatar'] },
+        { model: ReviewImage, attributes: ['image_url'] }
+      ]
+    })
+    res.json(updatedReview)
+  } catch (err) {
+    res.status(400).json({ message: 'Review update failed', error: err.message })
+  }
+})
+
+// Vote on a review
+router.post('/vote/:reviewId', authenticate, async (req, res) => {
+  const { reviewId } = req.params
+  const { vote_type } = req.body
+  const userId = req.user.id
+
+  try {
+    const review = await Review.findByPk(reviewId)
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' })
+    }
+
+    res.json({ message: 'Vote recorded successfully' })
+  } catch (err) {
+    res.status(400).json({ message: 'Vote failed', error: err.message })
+  }
+})
+
+// Delete a review
+router.delete('/:reviewId', authenticate, async (req, res) => {
+  const { reviewId } = req.params
+  const userId = req.user.id
+
+  try {
+    const review = await Review.findByPk(reviewId)
+    
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' })
+    }
+    
+    if (review.user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized to delete this review' })
+    }
+    await review.destroy()
+    res.json({ message: 'Review deleted successfully', id: reviewId })
+  } catch (err) {
+    res.status(400).json({ message: 'Delete failed', error: err.message })
+  }
+})
+
+/**
+ * Get reviews written by a specific user
+ */
+router.get('/user/:userId', authenticate, async (req, res) => {
+  const { userId } = req.params
+  const { page = 1, per_page: perPage = 10 } = req.query
+  const offset = (page - 1) * perPage
+
+  try {
+    // Users can only view their own reviews unless they're an admin
+    if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized to view these reviews' })
+    }
+
+    const { rows, count } = await Review.findAndCountAll({
+      where: { 
+        user_id: userId,
+        ...(req.user.role !== 'admin' && { status: 'approved' }) // Only admins can see all reviews
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['username', 'avatar']
+        },
+        {
+          model: Trip,
+          attributes: ['title', 'created_by']
+        },
+        {
+          model: ReviewImage,
+          attributes: ['image_url']
+        }
+      ],
+      where: {
+        ...(req.user.role !== 'admin' && { status: 'approved' }) // Only admins can see all reviews
+      },
+      order: [['created_at', 'DESC']],
+      limit: parseInt(perPage),
+      offset
+    })
+
+    res.json({
+      data: rows,
+      meta: {
+        current_page: parseInt(page),
+        per_page: parseInt(perPage),
+        total: count,
+        last_page: Math.ceil(count / perPage)
+      }
+    })
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to fetch reviews', error: err.message })
+  }
+})
+
+/**
+ * Get reviews for trips created by a specific user
+ */
+router.get('/trip-owner/:userId', authenticate, async (req, res) => {
+  const { userId } = req.params
+  const { page = 1, per_page: perPage = 10 } = req.query
+  const offset = (page - 1) * perPage
+
+  try {
+    // Users can only view reviews for their own trips unless they're an admin
+    if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized to view these reviews' })
+    }
+
+    // Build where clause
+    const { rows, count } = await Review.findAndCountAll({
+      include: [
+        {
+          model: User,
+          attributes: ['username', 'avatar']
+        },
+        {
+          model: Trip,
+          attributes: ['title', 'created_by'],
+          where: { created_by: userId }
+        },
+        {
+          model: ReviewImage,
+          attributes: ['image_url']
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(perPage),
+      offset
+    })
+
+    res.json({
+      data: rows,
+      meta: {
+        current_page: parseInt(page),
+        per_page: parseInt(perPage),
+        total: count,
+        last_page: Math.ceil(count / perPage)
+      }
+    })
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to fetch reviews', error: err.message })
   }
 })
 

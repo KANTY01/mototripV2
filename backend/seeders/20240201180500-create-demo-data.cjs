@@ -48,7 +48,7 @@ module.exports = {
           password: hashedPassword,
           username: `premiumrider${i}_${timestamp}`,
           experience_level: 'expert',
-          role: 'user',
+          role: 'premium',
           preferred_routes: JSON.stringify(["Blue Ridge Parkway", "Skyline Drive"]),
           motorcycle_details: JSON.stringify({
             make: "BMW",
@@ -158,7 +158,7 @@ module.exports = {
 
       // 4. Add Trip Images
       console.log('Adding trip images...');
-      const galleryDir = path.join(__dirname, '../../../gallery');
+      const galleryDir = path.join(process.cwd(), '../gallery');
       const imageFiles = fs.readdirSync(galleryDir)
         .filter(file => file.endsWith('.webp'))
         .map(file => `/gallery/${file}`);

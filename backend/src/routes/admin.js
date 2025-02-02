@@ -51,14 +51,16 @@ const upload = multer({ dest: 'uploads/' })
  *         description: Forbidden - Admin only
  */
 router.get('/reviews', authenticate, authorize(['admin']), async (req, res) => {
-  const { reported, userId, tripId, page = 1, perPage = 10 } = req.query
+  const page = parseInt(req.query.page) || 1
+  const perPage = parseInt(req.query.per_page) || 10
   const offset = (page - 1) * perPage
 
   try {
     const whereClause = {}
-    if (reported) whereClause.reports = { [Op.gt]: 0 }
-    if (userId) whereClause.user_id = userId
-    if (tripId) whereClause.trip_id = tripId
+    if (req.query.reported === 'true') whereClause.reports = { [Op.gt]: 0 }
+    if (req.query.userId) whereClause.user_id = parseInt(req.query.userId)
+    if (req.query.status) whereClause.status = req.query.status === 'null' ? null : req.query.status
+    if (req.query.tripId) whereClause.trip_id = parseInt(req.query.tripId)
 
     const { rows, count } = await Review.findAndCountAll({
       where: whereClause,
@@ -72,9 +74,105 @@ router.get('/reviews', authenticate, authorize(['admin']), async (req, res) => {
       offset
     })
 
-    res.json({ data: rows, total: count, page: parseInt(page), perPage: parseInt(perPage) })
+    // Transform the data to include image URLs
+    const transformedRows = rows.map(row => {
+      const review = row.get({ plain: true })
+      return {
+        ...review,
+        images: review.ReviewImages?.map(img => img.image_url) || [],
+        status: review.status
+      }
+    })
+
+    // Format response to match frontend's expected structure
+    res.json({
+      data: transformedRows || [],
+      meta: { current_page: page, last_page: Math.ceil(count / perPage), per_page: perPage, total: count }
+    })
   } catch (err) {
     res.status(400).json({ message: 'Failed to fetch reviews', error: err.message })
+  }
+})
+
+/**
+ * @swagger
+ * /api/admin/reviews/{id}:
+ *   patch:
+ *     summary: Update a review status (admin only)
+ *     tags: [Reviews, Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [approved, rejected]
+ *     responses:
+ *       200:
+ *         description: Review updated successfully
+ */
+router.patch('/reviews/:id', authenticate, authorize(['admin']), async (req, res) => {
+  try {
+    const review = await Review.findByPk(req.params.id)
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' })
+    }
+
+    const { status, content, rating } = req.body
+    if (status && !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' })
+    }
+
+    await review.update({
+      status: status || review.status,
+      content: content || review.content,
+      rating: req.body.rating || review.rating
+    })
+
+    res.json(review)
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to update review', error: err.message })
+  }
+})
+
+/**
+ * @swagger
+ * /api/admin/reviews/{id}:
+ *   delete:
+ *     summary: Delete a review (admin only)
+ *     tags: [Reviews, Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Review deleted successfully
+ */
+router.delete('/reviews/:id', authenticate, authorize(['admin']), async (req, res) => {
+  try {
+    const deleted = await Review.destroy({ where: { id: req.params.id } })
+    if (!deleted) {
+      return res.status(404).json({ message: 'Review not found' })
+    }
+    res.json({ message: 'Review deleted successfully', id: req.params.id })
+  } catch (err) {
+    res.status(400).json({ message: 'Failed to delete review', error: err.message })
   }
 })
 

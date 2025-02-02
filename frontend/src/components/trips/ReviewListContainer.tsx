@@ -1,47 +1,46 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Box, CircularProgress, Alert, Paper } from '@mui/material'
-import { useAppSelector } from '../../store/hooks'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import ReviewList from './ReviewList'
-import { Review } from '../../types'
-import { reviewApi } from '../../api/reviews'
+import { 
+  fetchUserReviews,
+  selectReviews,
+  selectReviewStatus,
+  selectReviewError
+} from '../../store/slices/reviewSlice'
 
 interface ReviewListContainerProps {
   userOnly?: boolean
 }
 
 const ReviewListContainer = ({ userOnly }: ReviewListContainerProps) => {
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const currentUser = useAppSelector(state => state.auth.user)
+  const dispatch = useAppDispatch()
+  const status = useAppSelector(selectReviewStatus)
+  const error = useAppSelector(selectReviewError)
 
   useEffect(() => {
     const fetchReviews = async () => {
-      try {
-        setLoading(true)
-        if (userOnly && !currentUser?.id) {
-          throw new Error('No user ID available')
+      if (!userOnly) {
+        return; // Don't fetch if not in user-only mode
+      }
+
+      try {        
+        if (currentUser?.id) {
+          await dispatch(fetchUserReviews(currentUser.id)).unwrap()
         }
-        // For user-only reviews, we'll fetch only the current user's reviews
-        // Otherwise, we'll fetch reviews for the trip
-        const response = userOnly && currentUser?.id 
-          ? await reviewApi.adminGetAllReviews({ userId: currentUser.id })
-          : []
-        // The tripId will be handled by the ReviewList component itself
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load reviews')
-      } finally {
-        setLoading(false)
+        console.error('Failed to fetch reviews:', err)
       }
     }
-
     fetchReviews()
-  }, [userOnly, currentUser])
+  }, [userOnly, currentUser, dispatch])
 
-  if (loading) {
+  if (status === 'loading') {
     return (
       <Paper
         elevation={0}
-        sx={{
+        sx={{ 
           p: 3,
           border: 1,
           borderColor: 'divider',
@@ -67,7 +66,6 @@ const ReviewListContainer = ({ userOnly }: ReviewListContainerProps) => {
     )
   }
 
-  // Pass a dummy tripId since we're showing user reviews
   return <ReviewList tripId={0} />
 }
 

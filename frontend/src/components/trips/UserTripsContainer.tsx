@@ -1,19 +1,32 @@
 import { useEffect, useState } from 'react'
-import { Box, CircularProgress, Alert, Paper } from '@mui/material'
+import { Box, CircularProgress, Alert, Paper, Pagination } from '@mui/material'
 import { useAppSelector } from '../../store/hooks'
-import { userApi } from '../../api/users'
+import { tripApi } from '../../api/trips'
 import UserTripList from './UserTripList'
-import { Trip } from '../../types'
+import { Trip, TripLocation } from '../../types'
 
 interface UserTripsContainerProps {
   userId?: number
   favorites?: boolean
 }
 
+const mapApiTripToTrip = (apiTrip: any): Trip => ({
+  ...apiTrip,
+  is_premium: apiTrip.is_premium || false,
+  is_favorite: apiTrip.is_favorite || false,
+  location: apiTrip.location || {
+    latitude: 0,
+    longitude: 0
+  } as TripLocation
+})
+
 const UserTripsContainer = ({ userId, favorites }: UserTripsContainerProps) => {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [itemsPerPage] = useState(10)
   const currentUser = useAppSelector(state => state.auth.user)
 
   useEffect(() => {
@@ -24,11 +37,16 @@ const UserTripsContainer = ({ userId, favorites }: UserTripsContainerProps) => {
         if (!userIdToFetch) {
           throw new Error('No user ID available')
         }
-        const response = await userApi.getUserTrips(userIdToFetch)
+        const filters = userId ? { userId } : undefined
+        const response = await tripApi.getTrips(filters, page, itemsPerPage)
+        
+        const mappedTrips = response.trips.map(mapApiTripToTrip)
         // If favorites is true, filter only favorited trips
-        const filteredTrips = favorites 
-          ? response.filter(trip => trip.is_favorite)
-          : response
+        const filteredTrips = favorites
+          ? mappedTrips.filter(trip => trip.is_favorite)
+          : mappedTrips
+        
+        setTotalPages(response.pagination.total_pages)
         setTrips(filteredTrips)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load trips')
@@ -38,7 +56,11 @@ const UserTripsContainer = ({ userId, favorites }: UserTripsContainerProps) => {
     }
 
     fetchTrips()
-  }, [userId, currentUser, favorites])
+  }, [userId, currentUser, favorites, page])
+
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value)
+  }
 
   if (loading) {
     return (
@@ -69,7 +91,19 @@ const UserTripsContainer = ({ userId, favorites }: UserTripsContainerProps) => {
     )
   }
 
-  return <UserTripList trips={trips} />
+  return (
+    <Box>
+      <UserTripList trips={trips} />
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+          />
+        </Box>
+      )}
+    </Box>
+  )
 }
-
 export default UserTripsContainer

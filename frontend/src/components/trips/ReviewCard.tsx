@@ -36,7 +36,7 @@ import {
   Edit,
   Delete
 } from '@mui/icons-material';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Review } from '../../types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { deleteReview, voteReview, reportReview } from '../../store/slices/reviewSlice';
@@ -139,7 +139,15 @@ const ReviewCard = ({ review, onEdit, isOwner = false, isAdmin = false }: Review
               mt: 0.5
             }}
           >
-            {format(new Date(review.created_at), 'MMM dd, yyyy')}
+            {(() => {
+              if (!review.created_at) return 'Just now';
+              const date = new Date(review.created_at);
+              if (!isValid(date)) {
+                console.warn('Invalid date:', review.created_at);
+                return 'Just now';
+              }
+              return format(date, 'MMM dd, yyyy');
+            })()}
           </Typography>
         </Box>
 
@@ -209,7 +217,7 @@ const ReviewCard = ({ review, onEdit, isOwner = false, isAdmin = false }: Review
       </Box>
       
       <Rating 
-        value={review.rating} 
+        value={Number(review.rating)}
         readOnly 
         precision={0.5}
         sx={{ 
@@ -279,7 +287,11 @@ const ReviewCard = ({ review, onEdit, isOwner = false, isAdmin = false }: Review
       )}
 
       {/* Report Dialog */}
-      <Dialog open={showReportDialog} onClose={() => setShowReportDialog(false)}>
+      {showReportDialog && <Dialog 
+        open={true} 
+        onClose={() => setShowReportDialog(false)}
+        keepMounted={false}
+      >
         <DialogTitle>Report Review</DialogTitle>
         <DialogContent>
           <TextField
@@ -305,10 +317,13 @@ const ReviewCard = ({ review, onEdit, isOwner = false, isAdmin = false }: Review
             Report
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog>}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
+      {showDeleteDialog && <Dialog 
+        open={true} 
+        onClose={() => setShowDeleteDialog(false)}
+        keepMounted={false}>
         <DialogTitle>Delete Review</DialogTitle>
         <DialogContent>
           <Typography>Are you sure you want to delete this review?</Typography>
@@ -323,7 +338,7 @@ const ReviewCard = ({ review, onEdit, isOwner = false, isAdmin = false }: Review
             Delete
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog>}
     </Paper>
   );
 };

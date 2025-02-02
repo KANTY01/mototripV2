@@ -3,9 +3,9 @@ node_modules
 package-lock.json
 
 # Environment variables
-# .env
-# .env.*
-# !.env.example
+ .env
+ .env.*
+ !.env.example
 
 # Build outputs
 dist
@@ -49,9 +49,11 @@ docker-compose.override.yml
 .temp
 .tmp
 .git_disabled/
-backend/database/database.db
+backend/database/
 database.db
-backend/database/database.db
 backend/dump.rdb
 backend/uploads/
 backend/sqlite.db
+gallery/
+
+gallery/

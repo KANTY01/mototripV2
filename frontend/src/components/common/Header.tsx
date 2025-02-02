@@ -69,7 +69,7 @@ const Header = () => {
       roles: ['user', 'premium', 'admin']
     },
     { title: 'Separator', isSeparator: true },
-    { title: 'My Trips', action: () => navigate('/trips') },
+    { title: 'My Trips', action: () => navigate('/my-trips') },
     { title: 'Logout', action: handleLogout }
   ]
 

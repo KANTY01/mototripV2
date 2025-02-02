@@ -134,21 +134,54 @@ router.post("/", authenticate, upload.array("images"), async (req, res) => {
  *         description: Failed to fetch trips
  */
 router.get("/", async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const perPage = parseInt(req.query.per_page) || 10;
+  const userId = req.query.userId;
+  const offset = (page - 1) * perPage;
+
   try {
+    const whereClause = {};
+    
+    // Add userId filter if provided
+    if (userId) {
+      whereClause.created_by = userId;
+    }
+
+    // Get total count with filters
+    const total = await Trip.count({
+      where: whereClause
+    });
+
     const trips = await Trip.findAll({
+      where: whereClause,
       include: [
         {
           model: User,
-          attributes: ["username"],
+          attributes: ["username", "avatar"],
+        },
+        {
+          model: TripImage,
+          attributes: ["image_url"],
         },
       ],
+      limit: perPage,
+      offset: offset,
+      order: [["created_at", "DESC"]],
     });
 
     if (!trips) {
       return res.status(404).json({ message: "No trips found" });
     }
-
-    res.json(trips || []);
+    
+    res.json({
+      trips: trips || [],
+      pagination: {
+        current_page: page,
+        total_pages: Math.ceil(total / perPage),
+        total_items: total,
+        per_page: perPage
+      }
+    });
   } catch (err) {
     res
       .status(400)
@@ -183,7 +216,7 @@ router.get("/", async (req, res) => {
  *       404:
  *         description: Trip not found
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", authenticate, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -352,14 +385,167 @@ router.get("/user/:userId", async (req, res) => {
   try {
     const trips = await Trip.findAll({
       where: { created_by: userId },
-      include: [{ model: User, attributes: ["username", "avatar"] }],
+      include: [
+        { 
+          model: User, 
+          attributes: ["username", "avatar"] 
+        },
+        {
+          model: TripImage,
+          attributes: ["image_url"],
+        }
+      ],
       limit,
       offset,
       order: [["created_at", "DESC"]]
     });
-    res.json(trips);
+    
+    const total = await Trip.count({ where: { created_by: userId } });
+    
+    res.json({
+      trips: trips || [],
+      pagination: {
+        current_page: page,
+        total_pages: Math.ceil(total / limit),
+        total_items: total,
+        per_page: limit
+      }
+    });
   } catch (err) {
     res.status(400).json({ message: "Failed to fetch user trips", error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   patch:
+ *     summary: Update a trip
+ *     tags: [Trips]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/TripUpdate'
+ *     responses:
+ *       200:
+ *         description: Trip updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User does not own this trip
+ *       404:
+ *         description: Trip not found
+ */
+router.patch("/:id", authenticate, upload.array("images"), async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const trip = await Trip.findByPk(id);
+    
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Check if user owns the trip or is admin
+    if (trip.created_by !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "You don't have permission to update this trip" });
+    }
+
+    const updateData = {
+    };
+
+    // Only update fields that are provided
+    if (req.body.title) updateData.title = req.body.title;
+    if (req.body.description) updateData.description = req.body.description;
+    if (req.body.start_date) updateData.start_date = req.body.start_date;
+    if (req.body.end_date) updateData.end_date = req.body.end_date;
+    if (req.body.difficulty) updateData.difficulty = req.body.difficulty;
+    if (req.body.distance) updateData.distance = req.body.distance;
+    if (req.body.is_premium !== undefined) updateData.is_premium = req.body.is_premium === "true";
+
+    // Update trip
+    await trip.update(updateData);
+
+    // Handle new image uploads
+    if (req.files && req.files.length > 0) {
+      const images = req.files.map((file) => ({
+        trip_id: trip.id,
+        image_url: file.path,
+      }));
+      await TripImage.bulkCreate(images);
+    }
+
+    // Clear cache
+    await cache.del(`trip:${id}`);
+    await cache.del(`trip:${id}:premium`);
+
+    res.json({ message: "Trip updated successfully", tripId: trip.id });
+  } catch (err) {
+    res.status(400).json({ message: "Failed to update trip", error: err.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/trips/{id}:
+ *   delete:
+ *     summary: Delete a trip
+ *     tags: [Trips]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Trip deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User does not own this trip
+ *       404:
+ *         description: Trip not found
+ */
+router.delete("/:id", authenticate, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const trip = await Trip.findByPk(id);
+    
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    // Check if user owns the trip or is admin
+    if (trip.created_by !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "You don't have permission to delete this trip" });
+    }
+
+    // Delete trip
+    await trip.destroy();
+
+    // Clear cache
+    await cache.del(`trip:${id}`);
+    await cache.del(`trip:${id}:premium`);
+
+    res.json({ message: "Trip deleted successfully" });
+  } catch (err) {
+    res.status(400).json({ message: "Failed to delete trip", error: err.message });
   }
 });
 

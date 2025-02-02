@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { RootState } from '../store'
-import api from '../../api/axiosConfig'
+import { tripApi } from '../../api/trips'
 
 import { Trip } from '../../types'
 
 interface TripFilters {
-  difficulty?: string
+  difficulty?: 'easy' | 'moderate' | 'hard'
   minDistance?: number
   maxDistance?: number
   startDate?: string
@@ -32,8 +32,8 @@ export const fetchTrips = createAsyncThunk(
   'trips/fetchTrips',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/trips')
-      return response.data
+      const response = await tripApi.getTrips()
+      return response.trips
     } catch (error: any) {
       return rejectWithValue(
         error.message || 'Failed to fetch trips'
@@ -47,17 +47,20 @@ export const fetchTrip = createAsyncThunk(
   'trips/fetchTrip',
   async (tripId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/trips/${tripId}`)
-      return response.data
-    } catch (error: any) {
-      if (error.response && typeof error.response === 'object' &&
-        'data' in error.response && typeof error.response.data === 'object' &&
-        error.response.data.message && typeof error.response.data.message === 'string' &&
-        error.response.data.message.includes('Premium')) {
-        console.warn('Premium trip access denied:', error.response.data.message)
-        return rejectWithValue(error.response.data.message)
+      return await tripApi.getTrip(tripId)
+    } catch (err: any) {
+      // If it's a premium trip, try to get premium content
+      if (err.response?.status === 403 && err.response?.data?.message?.includes('premium')) {
+        try {
+          return await tripApi.getPremiumContent(tripId)
+        } catch (error: any) {
+          const message = error.response?.data?.message || error.message
+          console.error('Failed to fetch premium trip:', message)
+          return rejectWithValue(message)
+        }
       }
-      return rejectWithValue('Failed to fetch trip')
+      console.error('Failed to fetch trip:', err.message)
+      return rejectWithValue(err.response?.data?.message || err.message || 'Failed to fetch trip')
     }
   }
 )
@@ -65,28 +68,11 @@ export const fetchTrip = createAsyncThunk(
 // Create the filterTrips thunk
 export const filterTrips = createAsyncThunk(
   'trips/filterTrips',
-  async (filters: TripFilters, { getState, rejectWithValue }) => {
+  async (filters: TripFilters, { rejectWithValue }) => {
     try {
-      const state = getState() as RootState
-      let trips = state.trips.trips
-
-      if (filters.difficulty) {
-        trips = trips.filter(t => t.difficulty === filters.difficulty)
-      }
-      if (filters.minDistance) {
-        trips = trips.filter(t => t.distance >= filters.minDistance!)
-      }
-      if (filters.maxDistance) {
-        trips = trips.filter(t => t.distance <= filters.maxDistance!)
-      }
-      if (filters.startDate) {
-        trips = trips.filter(t => new Date(t.start_date) >= new Date(filters.startDate!))
-      }
-      if (filters.endDate) {
-        trips = trips.filter(t => new Date(t.end_date) <= new Date(filters.endDate!))
-      }
-
-      return trips
+      const response = await tripApi.getTrips(filters)
+      // Let the backend handle the filtering
+      return response.trips
     } catch (error) {
       return rejectWithValue('Failed to filter trips')
     }

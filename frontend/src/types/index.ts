@@ -70,7 +70,7 @@ export interface Trip {
   end_date: string
   images?: string[]
   user?: User
-  is_premium: boolean
+  is_premium?: boolean
   location: TripLocation
   is_favorite?: boolean
 }
@@ -98,7 +98,12 @@ export interface Review {
   content: string
   images?: string[]
   created_at: string
-  user: User
+  user: {
+    id: number
+    username: string
+    avatar?: string
+    role?: UserRole
+  }
   votes?: ReviewVotes
   reports_count?: number
   status?: 'active' | 'hidden' | 'deleted'

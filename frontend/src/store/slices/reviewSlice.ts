@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { RootState } from '../store'
-import { Review } from '../../types'
+import { Review, User } from '../../types'
 import { reviewApi } from '../../api/reviews'
 
 export interface ReviewPagination {
@@ -52,6 +52,28 @@ export const fetchReviews = createAsyncThunk(
   }
 )
 
+export const fetchUserReviews = createAsyncThunk(
+  'reviews/fetchUserReviews',
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      // Fetch both user's reviews and reviews on their trips
+      const [userReviews, tripOwnerReviews] = await Promise.all([
+        reviewApi.getUserReviews(userId),
+        reviewApi.getTripOwnerReviews(userId)
+      ])
+
+      // Combine and deduplicate reviews
+      const allReviews = [...userReviews.data, ...tripOwnerReviews.data]
+      const uniqueReviews = Array.from(
+        new Map(allReviews.map(review => [review.id, review])).values()
+      )
+      return uniqueReviews
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch user reviews')
+    }
+  }
+)
+
 export const submitReview = createAsyncThunk(
   'reviews/submitReview',
   async ({ 
@@ -64,19 +86,31 @@ export const submitReview = createAsyncThunk(
     formData: FormData 
   }, { rejectWithValue }) => {
     try {
-      const reviewData = {
-        rating: parseInt(formData.get('rating') as string),
-        content: formData.get('content') as string,
-        images: Array.from(formData.getAll('images')) as File[],
-        removed_images: formData.get('removed_images') 
-          ? JSON.parse(formData.get('removed_images') as string)
-          : undefined
+      // Validate required fields are present
+      const rating = formData.get('rating')
+      const content = formData.get('content')
+      
+      if (!rating || !content) {
+        throw new Error('Rating and content are required')
       }
 
+      // Create a new FormData instance to ensure clean data
+      const cleanFormData = new FormData()
+      cleanFormData.append('rating', rating.toString())
+      cleanFormData.append('content', content.toString())
+      formData.getAll('images').forEach(image => cleanFormData.append('images', image))
+
+      let response;
       if (reviewId) {
-        return await reviewApi.updateReview(reviewId, reviewData)
+        response = await reviewApi.updateReview(reviewId, cleanFormData)
+        if (!response || !response.id) {
+          throw new Error('Invalid response from update review')
+        }
+        return response
+
       } else if (tripId) {
-        return await reviewApi.createReview(tripId, reviewData)
+        const response = await reviewApi.createReview(tripId, cleanFormData)
+        return response
       }
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to submit review')
@@ -110,6 +144,20 @@ const reviewSlice = createSlice({
         state.status = 'failed'
         state.error = action.payload as string
       })
+      // Fetch user reviews
+      .addCase(fetchUserReviews.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(fetchUserReviews.fulfilled, (state, action) => {
+        state.status = 'idle'
+        state.reviews = action.payload
+        state.pagination = null // User reviews don't use pagination
+        state.error = null
+      })
+      .addCase(fetchUserReviews.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.payload as string
+      })
       // Submit review
       .addCase(submitReview.pending, (state) => {
         state.status = 'loading'
@@ -127,6 +175,18 @@ const reviewSlice = createSlice({
         state.error = null
       })
       .addCase(submitReview.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.payload as string
+      })
+      // Delete review
+      .addCase(deleteReview.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(deleteReview.fulfilled, (state, action) => {
+        state.status = 'idle'
+        state.reviews = state.reviews.filter(review => review.id !== action.payload)
+      })
+      .addCase(deleteReview.rejected, (state, action) => {
         state.status = 'failed'
         state.error = action.payload as string
       })

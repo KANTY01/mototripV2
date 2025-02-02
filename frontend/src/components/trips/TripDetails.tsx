@@ -27,6 +27,8 @@ import { AppDispatch, RootState } from '../../store/store'
 import { fetchTrip } from '../../store/slices/tripSlice'
 import ReviewList from '../trips/ReviewList'
 import ReviewForm from './ReviewForm'
+import EditReviewDialog from './EditReviewDialog'
+import { Review } from '../../types'
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>()
@@ -36,6 +38,8 @@ const TripDetails = () => {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'))
   const { selectedTrip: trip, status, error } = useSelector((state: RootState) => state.trips)
+  const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [showReviewForm, setShowReviewForm] = useState(false)
 
   useEffect(() => {
@@ -43,6 +47,16 @@ const TripDetails = () => {
       dispatch(fetchTrip(Number(id)))
     }
   }, [dispatch, id])
+
+  const handleEditReview = (review: Review) => {
+    setReviewToEdit(review)
+    setEditDialogOpen(true)
+  }
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false)
+    setReviewToEdit(null)
+  }
 
   if (status === 'loading') {
     return (
@@ -414,7 +428,15 @@ const TripDetails = () => {
           </>
         )}
 
-        <ReviewList tripId={trip.id} />
+        <ReviewList tripId={trip.id} onEdit={handleEditReview} />
+        
+        {reviewToEdit && (
+          <EditReviewDialog
+            open={editDialogOpen}
+            onClose={handleCloseEditDialog}
+            review={reviewToEdit}
+          />
+        )}
       </Paper>
     </Container>
   )

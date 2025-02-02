@@ -1,12 +1,12 @@
 import api from './axiosConfig'
 
-interface Trip {
+export interface Trip {
   id: number
   title: string
   description: string
   start_date: string
   end_date: string
-  difficulty: 'easy' | 'medium' | 'hard'
+  difficulty: 'easy' | 'moderate' | 'hard'
   distance: number
   created_by: number
   images: string[]
@@ -18,14 +18,15 @@ interface Trip {
       longitude: number
     }[]
   }
+  is_premium?: boolean
 }
 
-interface TripCreate {
+export interface TripCreate {
   title: string
   description: string
   start_date: string
   end_date: string
-  difficulty: 'easy' | 'medium' | 'hard'
+  difficulty: 'easy' | 'moderate' | 'hard'
   distance: number
   images: File[]
   location: {
@@ -38,9 +39,10 @@ interface TripCreate {
   }
 }
 
-interface TripFilters {
+export interface TripFilters {
+  userId?: number
   search?: string
-  difficulty?: 'easy' | 'medium' | 'hard'
+  difficulty?: 'easy' | 'moderate' | 'hard'
   minDistance?: number
   maxDistance?: number
   startDate?: string
@@ -51,9 +53,19 @@ interface TripFilters {
     radius: number // in kilometers
   }
 }
+
+export interface PaginatedResponse<T> {
+  trips: T[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_items: number;
+    per_page: number;
+  };
+}
  
 export const tripApi = {
-  getTrips: async (filters?: TripFilters, page: number = 1, perPage: number = 10) => {
+  getTrips: async (filters?: TripFilters, page: number = 1, perPage: number = 10): Promise<PaginatedResponse<Trip>> => {
     try {
       const response = await api.get('/trips', { params: { ...filters, page, per_page: perPage } })
       return response.data
@@ -71,13 +83,21 @@ export const tripApi = {
     return response.data
   },
 
-  createTrip: async (tripData: TripCreate) => {
+  createTrip: async (tripData: Partial<TripCreate>) => {
     const formData = new FormData()
-    Object.entries(tripData).forEach(([key, value]) => {
+    Object.entries(tripData).forEach(([key, value]: [string, any]) => {
       if (key === 'images') {
-        value.forEach((file: File) => formData.append('images', file))
+        if (Array.isArray(value)) {
+          value.forEach((file: File) => formData.append('images', file))
+        }
+      } else if (key === 'location' && value) {
+        formData.append('latitude', value.latitude.toString())
+        formData.append('longitude', value.longitude.toString())
+        if (value.route_points) {
+          formData.append('route_points', JSON.stringify(value.route_points))
+        }
       } else {
-        formData.append(key, value)
+        formData.append(key, value.toString())
       }
     })
     const response = await api.post('/trips', formData, {
@@ -89,7 +109,25 @@ export const tripApi = {
   },
 
   updateTrip: async (id: number, tripData: Partial<TripCreate>) => {
-    const response = await api.patch(`/trips/${id}`, tripData)
+    const formData = new FormData()
+    Object.entries(tripData).forEach(([key, value]: [string, any]) => {
+      if (key === 'images') {
+        if (Array.isArray(value)) {
+          value.forEach((file: File) => formData.append('images', file))
+        }
+      } else if (key === 'location' && value) {
+        formData.append('latitude', value.latitude.toString())
+        formData.append('longitude', value.longitude.toString())
+        if (value.route_points) {
+          formData.append('route_points', JSON.stringify(value.route_points))
+        }
+      } else if (value !== undefined) {
+        formData.append(key, value.toString())
+      }
+    })
+    const response = await api.patch(`/trips/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data
   },
 
