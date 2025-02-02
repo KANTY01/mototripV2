@@ -1,186 +1,131 @@
 # Motorcycle Trip Platform
 
-## Overview
-
 The Motorcycle Trip Platform is a comprehensive web application designed for motorcycle enthusiasts to plan, share, and discover exciting motorcycle trips.
 
-## Core Features
+## Description
 
-### User Management
-- **Authentication & Authorization** (Implemented)
-  - JWT-based authentication
-  - Role-based access control (User, Premium, Admin)
-  - Session management with Redis
+This web application helps riders organize and document their motorcycle adventures by providing features such as:
 
-### Trip Management
-- **Basic Trip Features** (Implemented)
-  - Create and manage trips
-  - Upload trip images
-  - Basic trip details (title, description, dates)
-  - Difficulty levels
-  - Distance tracking
+- Creating and managing motorcycle trips.
+- Uploading trip images and details.
+- Tracking trip difficulty levels and distances.
+- Social sharing and engagement with other riders.
+- Reviewing and rating trips.
+- Admin management for content and users.
 
-- **Trip Details** (Basic Implementation)
-  - Image support
-  - Basic trip descriptions
-  - Start and end dates
+The platform is flexible and can be adapted for other outdoor adventure activities.
 
-### Social Features (Partially Implemented)
-- **Basic Social Features**
-  - View other users' trips
-  - Basic user profiles
-  - Trip sharing capabilities
+---
 
-### Premium Features (Basic Implementation)
-- **Access Control**
-  - Premium trip flagging
-  - Basic premium content access
-  - Premium route access control
+## Features
 
-### Reviews & Ratings (Implemented)
-- **Quality Assurance**
-  - Basic trip ratings and reviews
-  - Photo reviews
-  - Review status tracking
-  - Content moderation system
-  - Review reporting (Database Ready)
-  - Review voting system (In Progress)
+### For Riders
 
-### Admin Dashboard (Basic Implementation)
-- **Platform Management**
-  - Basic user management
-  - Content moderation
-  - Trip management
-  - Review moderation
+- **Trip Management**: Create, edit, and remove trips.
+- **Trip Sharing**: Share trips with the community.
+- **Review System**: Rate and review trips with photos.
+- **User Profiles**: View and manage basic user profiles.
 
-## Technical Features
+### For Premium Users
 
-### Performance
-- **Caching System** (Implemented)
-  - Redis caching for trips
-  - Basic browser caching
-  - Static asset caching
+- **Exclusive Trip Access**: Unlock premium trips and routes.
+- **Advanced Trip Details**: Access enhanced trip insights.
 
-- **Optimization**
-  - Basic image handling
-  - Pagination implementation
-  - Query optimization
+### For Admins
 
-### Security (Basic Implementation)
-- **Current Features**
-  - JWT token security
-  - Basic CORS configuration
-  - Password hashing with bcrypt
-  - Role-based access control
+- **User Management**: Moderate and manage platform users.
+- **Content Moderation**: Oversee trip submissions and reviews.
 
-### Mobile Support
-- **Responsive Design**
-  - Basic mobile-friendly interface
-  - Responsive layouts
+---
 
-## Technology Stack
+## Screenshots
 
-### Frontend
-- React with TypeScript
-- Redux Toolkit for state management
-- Material-UI components
-- Axios for API communication
-- React Router for navigation
+### Trip Dashboard
+![image](https://github.com/user-attachments/assets/0b0692a1-f1a1-4cf7-8b0d-cf9c3b092a01)
 
-### Backend
-- Node.js and Express
-- Sequelize ORM
-- SQLite database
-- Redis for caching
-- JWT authentication
+### Trip Details Page
+![image](https://github.com/user-attachments/assets/a89c0603-e59c-468a-ab69-246e0f2e657e)
 
-### DevOps
-- Docker containerization
-- Docker Compose orchestration
+### User Profile
+![image](https://github.com/user-attachments/assets/4a779f80-cb35-42ac-8e96-32953dd09c03)
 
-## Getting Started
+### Admin Dashboard
+![image](https://github.com/user-attachments/assets/e5a7f72b-6c34-4740-8f44-73aa1b28bc83)
 
-1. **Prerequisites**
-   - Node.js (v18 or later)
-   - npm (v9 or later)
-   - Docker and Docker Compose
-   - Redis
-   - Git
+### Review System
+![image](https://github.com/user-attachments/assets/ab525259-dd69-4882-bcba-e477706d056d)
 
-2. **Quick Start**
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+- **Node.js**: Version 18 or later.
+- **Docker**: For containerized deployment.
+- **Redis**: For session and caching management.
+- **SQLite/PostgreSQL**: As the database backend.
+
+### Steps to Run the Application
+
+1. **Clone the Repository**
+
    ```bash
-   # Clone repository
-   git clone <repository-url>
-   cd motorcycle-trip-platform
+   git clone https://github.com/KANTY01/mototripV2.git
+   cd mototrip
+   ```
 
-   # Start with Docker
+2. **Start the Backend**
+
+   - Install dependencies:
+     ```bash
+     cd backend
+     npm install
+     ```
+   - Start the development server:
+     ```bash
+     npm run dev
+     ```
+
+3. **Start the Frontend**
+
+   - Navigate to the frontend directory:
+     ```bash
+     cd frontend
+     ```
+   - Install dependencies:
+     ```bash
+     npm install
+     ```
+   - Run the React development server:
+     ```bash
+     npm start
+     ```
+
+4. **Run with Docker (Alternative)**
+
+   ```bash
    docker-compose up --build
    ```
 
-3. **Access Points**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - API Docs: http://localhost:5000/api-docs
-   - Admin Dashboard: http://localhost:3000/admin
+5. **Access the Application**
 
-For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md).
+   - **Frontend**: [http://localhost:3000/](http://localhost:3000/)
+   - **Backend API**: [http://localhost:5000/](http://localhost:5000/)
+   - **Swagger UI**: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
 
-## Documentation
+---
 
-- [Architecture Guide](ARCHITECTURE.md)
-- [API Documentation](http://localhost:5000/api-docs)
-- [Database Schema](erd.md)
-- [Setup Guide](SETUP_GUIDE.md)
-- [Troubleshooting](TROUBLESHOOTING.md)
-- [Commands Help](commands-help.md)
-- [Docker Setup](DOCKER_SETUP_PROMPT.md)
+## Future Enhancements
 
-## Development
+- **Live Trip Tracking**
+- **Enhanced Social Features**
+- **Mobile App Development**
+- **More Premium Content and Subscriptions**
 
-### Local Development
-```bash
-# Backend
-cd backend
-npm install
-npm run dev
+---
 
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
+## Contact
 
-### Testing
-Note: Testing packages are installed but not implemented
-```bash
-# Testing infrastructure is ready but tests need to be written
-npm run test
-```
+For further details or collaboration, feel free to reach out!
 
-### Code Quality
-```bash
-# Linting
-npm run lint
-
-# Type checking
-npm run type-check
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## Support
-
-For support and troubleshooting:
-1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-2. Review [commands-help.md](commands-help.md)
-3. Submit an issue
-
-## License
-
-This project is licensed under the MIT License.
