@@ -129,3 +129,20 @@ The platform is flexible and can be adapted for other outdoor adventure activiti
 
 For further details or collaboration, feel free to reach out!
 
+##Accounts
+
+# Admin
+- Email: admin@motorcycletrip.com
+- Password: admin123
+- Role: admin
+- Access: Content management and moderation functions
+
+# Regular Users
+These users have basic access to create trips, write reviews, and follow other users.
+
+| Email | Password | Username |
+|-------|----------|----------|
+| user1@example.com | user1pass | rider1_* |
+| user2@example.com | user2pass | rider2_* |
+| user3@example.com | user3pass | rider3_* |
+
