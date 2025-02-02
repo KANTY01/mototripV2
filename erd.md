@@ -1,8 +1,4 @@
-erDiagram
-    %% Note: This diagram shows both implemented and planned database structures
-    %% (Implemented) indicates fully functional features
-    %% (Basic) indicates basic implementation
-    %% (Planned) indicates features not yet implemented
+
 
     users {
         INTEGER id PK
